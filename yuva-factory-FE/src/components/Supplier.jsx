@@ -1,5 +1,22 @@
 import React, { useState, useEffect } from 'react';
 
+const ICE_CREAM_HSN_CODES = [
+  { code: '21050000', label: '21050000 - Ice cream and other edible ice (18% GST)' },
+  { code: '0401', label: '0401 - Milk and cream, not concentrated (0% GST)' },
+  { code: '0402', label: '0402 - Milk and cream, concentrated (5% GST)' },
+  { code: '0405', label: '0405 - Butter and other milk fats (12% GST)' },
+  { code: '0406', label: '0406 - Cheese and curd (12% GST)' },
+  { code: '1701', label: '1701 - Cane or beet sugar (5% GST)' },
+  { code: '1805', label: '1805 - Cocoa powder, not sweetened (18% GST)' },
+  { code: '1806', label: '1806 - Chocolate and food preps with cocoa (18% GST)' },
+  { code: '2106', label: '2106 - Food preparations (flavours/syrups) (18% GST)' },
+  { code: '3923', label: '3923 - Plastic packing (cups/lids) (18% GST)' },
+  { code: '4819', label: '4819 - Paper packing (cartons/boxes) (18% GST)' },
+  { code: '4421', label: '4421 - Wood articles (wooden sticks) (12% GST)' },
+  { code: '0802', label: '0802 - Nuts (almonds, pistachios) (12% GST)' },
+  { code: '2007', label: '2007 - Jams, fruit jellies, purées (12% GST)' }
+];
+
 const SupplierPage = () => {
   // State for current step (1: Supplier Details, 2: Add Items)
   const [currentStep, setCurrentStep] = useState(1);
@@ -14,7 +31,8 @@ const SupplierPage = () => {
     phone: '',
     address: '',
     company: '',
-    gst: ''        // ✅ GST added
+    gst: '',       // ✅ GST added
+    hsn: ''        // ✅ HSN added
   });
 
   // State for items list - now each supplier has their own items
@@ -240,7 +258,8 @@ const SupplierPage = () => {
         email: currentSupplier.email || null,
         phone: currentSupplier.phone || null,
         address: currentSupplier.address || null,
-        gst: currentSupplier.gst || null    // ✅ GST added
+        gst: currentSupplier.gst || null,    // ✅ GST added
+        hsn: currentSupplier.hsn || null     // ✅ HSN added
       };
 
       console.log('Sending supplier data:', supplierData);
@@ -1588,7 +1607,7 @@ const SupplierPage = () => {
                 />
               </div>
 
-              {/* ✅ Row 2: GST Number | Email */}
+              {/* ✅ Row 2: GST Number | HSN Code */}
               <div style={styles.formGroup}>
                 <label style={styles.label}>GST Number</label>
                 <input
@@ -1603,6 +1622,23 @@ const SupplierPage = () => {
                 />
               </div>
 
+              <div style={styles.formGroup}>
+                <label style={styles.label}>HSN Code</label>
+                <select
+                  name="hsn"
+                  value={currentSupplier.hsn}
+                  onChange={handleSupplierChange}
+                  style={styles.input}
+                  disabled={loading}
+                >
+                  <option value="">Select HSN Code</option>
+                  {ICE_CREAM_HSN_CODES.map(hsn => (
+                    <option key={hsn.code} value={hsn.code}>{hsn.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Row 3: Email | Phone */}
               <div style={styles.formGroup}>
                 <label style={styles.label}>Email</label>
                 <input
@@ -1718,17 +1754,18 @@ const SupplierPage = () => {
 
               <div style={styles.formGroup}>
                 <label style={styles.label}>HSN</label>
-                <input
-                  type="number"
+                <select
                   name="watts"
                   value={currentItem.watts}
                   onChange={handleItemChange}
-                  placeholder="e.g., 9"
-                  min="0"
-                  step="1"
                   style={styles.input}
                   disabled={loading}
-                />
+                >
+                  <option value="">Select HSN Code</option>
+                  {ICE_CREAM_HSN_CODES.map(hsn => (
+                    <option key={hsn.code} value={hsn.code}>{hsn.label}</option>
+                  ))}
+                </select>
               </div>
 
               <div style={styles.formGroup}>

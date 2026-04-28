@@ -12,6 +12,23 @@ const API_URL = "http://localhost:5000/api/products";
 const SUPPLIER_API_URL = "http://localhost:5000/api";
 const BILLING_API_URL = "http://localhost:5000/api/billing";
 
+const ICE_CREAM_HSN_CODES = [
+  { code: '21050000', label: '21050000 - Ice cream and other edible ice (18% GST)' },
+  { code: '0401', label: '0401 - Milk and cream, not concentrated (0% GST)' },
+  { code: '0402', label: '0402 - Milk and cream, concentrated (5% GST)' },
+  { code: '0405', label: '0405 - Butter and other milk fats (12% GST)' },
+  { code: '0406', label: '0406 - Cheese and curd (12% GST)' },
+  { code: '1701', label: '1701 - Cane or beet sugar (5% GST)' },
+  { code: '1805', label: '1805 - Cocoa powder, not sweetened (18% GST)' },
+  { code: '1806', label: '1806 - Chocolate and food preps with cocoa (18% GST)' },
+  { code: '2106', label: '2106 - Food preparations (flavours/syrups) (18% GST)' },
+  { code: '3923', label: '3923 - Plastic packing (cups/lids) (18% GST)' },
+  { code: '4819', label: '4819 - Paper packing (cartons/boxes) (18% GST)' },
+  { code: '4421', label: '4421 - Wood articles (wooden sticks) (12% GST)' },
+  { code: '0802', label: '0802 - Nuts (almonds, pistachios) (12% GST)' },
+  { code: '2007', label: '2007 - Jams, fruit jellies, purées (12% GST)' }
+];
+
 export default function ItemsPage() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
@@ -1393,13 +1410,17 @@ export default function ItemsPage() {
             </div>
 
             <div style={modalStyles.formGroup}>
-              <label style={modalStyles.label}>Hsn</label>
-              <input
+              <label style={modalStyles.label}>HSN</label>
+              <select
                 style={modalStyles.input}
                 value={editingItem.watts || ""}
                 onChange={(e) => handleEditChange("watts", e.target.value)}
-                placeholder="Enter Hsn"
-              />
+              >
+                <option value="">Select HSN Code</option>
+                {ICE_CREAM_HSN_CODES.map(hsn => (
+                  <option key={hsn.code} value={hsn.code}>{hsn.label}</option>
+                ))}
+              </select>
             </div>
 
             <div style={modalStyles.formGroup}>

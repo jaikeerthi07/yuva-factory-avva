@@ -175,7 +175,7 @@ const ItemsListPage = () => {
         const searchLower = searchTerm.toLowerCase();
         return (
           item.name?.toLowerCase().includes(searchLower) ||
-          item.model?.toLowerCase().includes(searchLower) ||
+          item.watts?.toString().toLowerCase().includes(searchLower) ||
           item.type?.toLowerCase().includes(searchLower) ||
           item.id?.toString().includes(searchLower)
         );
@@ -373,7 +373,7 @@ const ItemsListPage = () => {
             <tr>
               <th>ID</th>
               <th>Name</th>
-              <th>Model</th>
+              <th>HSN Code</th>
               <th>Type</th>
               <th>Buy Price (₹)</th>
               <th>Added Date</th>
@@ -387,7 +387,7 @@ const ItemsListPage = () => {
         <tr>
           <td>${item.id || '—'}</td>
           <td><strong>${item.name || ''}</strong></td>
-          <td>${item.model || ''}</td>
+          <td>${item.watts || '—'}</td>
           <td>${item.type || '—'}</td>
           <td>₹${item.buy_price?.toFixed(2) || '0.00'}</td>
           <td>${formatDate(item.created_at)}</td>
@@ -803,7 +803,7 @@ const ItemsListPage = () => {
             <input
               type="text"
               style={styles.input}
-              placeholder="Search by ID, name, model, type..."
+              placeholder="Search by ID, name, HSN code, type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
@@ -938,7 +938,7 @@ const ItemsListPage = () => {
                 <tr>
                   <th style={styles.th}>ID</th>
                   <th style={styles.th}>Name</th>
-                  <th style={styles.th}>Model</th>
+                  <th style={styles.th}>HSN Code</th>
                   <th style={styles.th}>Type</th>
                   <th style={styles.th}>Buy Price (₹)</th>
                   <th style={styles.th}>Added Date</th>
@@ -960,7 +960,7 @@ const ItemsListPage = () => {
                       <strong style={{ color: '#ffffff' }}>{item.name}</strong>
                     </td>
                     <td style={styles.td}>
-                      {item.model || '—'}
+                      {item.watts || '—'}
                     </td>
                     <td style={styles.td}>
                       {item.type || '—'}

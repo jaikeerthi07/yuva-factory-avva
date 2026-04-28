@@ -21,6 +21,7 @@ const Bill = () => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerGST, setCustomerGST] = useState('');
+  const [gstError, setGstError] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerType, setCustomerType] = useState('external'); // 'internal' or 'external'
   const [customerDiscount, setCustomerDiscount] = useState(0); // Default discount for customer type
@@ -77,6 +78,7 @@ const Bill = () => {
   const [savedBillId, setSavedBillId] = useState(null);
   const [fetchingCustomer, setFetchingCustomer] = useState(false);
   const [logoDataUrl, setLogoDataUrl] = useState('');
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // Shop details (will be overridden by selected company)
   const defaultShopDetails = {
@@ -1121,6 +1123,29 @@ const Bill = () => {
     }
   }, [customerType, manualDiscount]);
 
+  // Auto-set billType based on GST presence
+  useEffect(() => {
+    if (customerGST && customerGST.trim() !== '') {
+      setBillType('exclusive-tax');
+    } else {
+      setBillType('inclusive-tax');
+    }
+  }, [customerGST]);
+
+  // Validate GST format
+  useEffect(() => {
+    if (customerGST && customerGST.trim() !== '') {
+      const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/i;
+      if (!gstRegex.test(customerGST)) {
+        setGstError('Invalid GST Number format');
+      } else {
+        setGstError('');
+      }
+    } else {
+      setGstError('');
+    }
+  }, [customerGST]);
+
   // Add thermal print styles
   useEffect(() => {
     const style = document.createElement('style');
@@ -1779,6 +1804,12 @@ const Bill = () => {
 
   // Save bill to database
   const saveBillToDatabase = async () => {
+    if (gstError) {
+      setError(gstError);
+      setTimeout(() => setError(''), 3000);
+      return null;
+    }
+
     const activeProducts = selectedProducts.filter(p => p.quantity > 0);
     
     if (activeProducts.length === 0) {
@@ -1849,7 +1880,7 @@ const Bill = () => {
   };
 
   // Generate HTML content for bill
-  const generateBillHTML = (overrideBillNumber = null) => {
+  const generateBillHTML = (overrideBillNumber = null, stateTaxType = 'cgst_sgst') => {
     const subtotal = calculateSubtotal();
     const discountAmount = calculateDiscountAmount();
     const taxAmount = calculateTaxAmount();
@@ -1860,6 +1891,7 @@ const Bill = () => {
     const grossAmount = subtotal - discountAmount;
     const cgstTotal = isTaxBill ? (taxAmount / 2).toFixed(2) : '0.00';
     const sgstTotal = isTaxBill ? (taxAmount / 2).toFixed(2) : '0.00';
+    const igstTotal = isTaxBill ? taxAmount.toFixed(2) : '0.00';
     const activeProducts = selectedProducts.filter(p => p.quantity > 0);
     const displayBillNumber = overrideBillNumber || billNumber;
 
@@ -2151,7 +2183,7 @@ const Bill = () => {
             
             .bill-items-header {
               display: grid;
-              grid-template-columns: ${isTaxBill ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
+              grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
               font-weight: bold;
               padding: 3px 2px;
               border-bottom: 1px solid #000;
@@ -2164,12 +2196,13 @@ const Bill = () => {
             
             .bill-item {
               display: grid;
-              grid-template-columns: ${isTaxBill ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
+              grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
               padding: 2px 2px;
               border-bottom: 1px dotted #ddd;
               font-size: 8px;
               gap: 4px;
               align-items: center;
+              text-align: center;
             }
             
             .bill-item-empty {
@@ -2386,13 +2419,12 @@ const Bill = () => {
             <div class="bill-items">
               <div class="bill-items-header">
                 <span>S.N</span>
-                <span>Item Name</span>
+                <span style="text-align: left;">Item Name</span>
                 <span>HSN</span>
                 <span>Qty</span>
                 <span>Free</span>
                 <span>Rate</span>
-                ${isTaxBill ? `<span>CGST ${(GST_RATE_PERCENT / 2).toFixed(1)}%</span>` : ''}
-                ${isTaxBill ? `<span>SGST ${(GST_RATE_PERCENT / 2).toFixed(1)}%</span>` : ''}
+                ${isTaxBill ? (stateTaxType === 'igst' ? `<span>IGST ${GST_RATE_PERCENT}%</span>` : `<span>CGST ${(GST_RATE_PERCENT / 2).toFixed(1)}%</span><span>SGST ${(GST_RATE_PERCENT / 2).toFixed(1)}%</span>`) : ''}
                 <span>Total</span>
               </div>
               <div>
@@ -2407,6 +2439,7 @@ const Bill = () => {
                   const totalItemTax = getLineTaxAmount(product);
                   const cgstAmt = (totalItemTax / 2).toFixed(2);
                   const sgstAmt = (totalItemTax / 2).toFixed(2);
+                  const igstAmt = totalItemTax.toFixed(2);
                   const itemTotalAmt = getLineTotalAmount(product);
 
                   return `
@@ -2420,7 +2453,7 @@ const Bill = () => {
                       <span>${qty}</span>
                       <span>${freeQty}</span>
                       <span>${rate.toFixed(2)}</span>
-                      ${isTaxBill ? `<span>${cgstAmt}</span><span>${sgstAmt}</span>` : ''}
+                      ${isTaxBill ? (stateTaxType === 'igst' ? `<span>${igstAmt}</span>` : `<span>${cgstAmt}</span><span>${sgstAmt}</span>`) : ''}
                       <span>${itemTotalAmt.toFixed(2)}</span>
                     </div>
                   `;
@@ -2468,7 +2501,12 @@ const Bill = () => {
                 <span>Gross Amt:</span>
                 <span>₹${grossAmount.toFixed(2)}</span>
               </div>
-              ${isTaxBill ? `
+              ${isTaxBill ? (stateTaxType === 'igst' ? `
+              <div class="invoice-row">
+                <span>IGST ${GST_RATE_PERCENT}%:</span>
+                <span>₹${igstTotal}</span>
+              </div>
+              ` : `
               <div class="invoice-row">
                 <span>CGST ${(GST_RATE_PERCENT / 2).toFixed(1)}%:</span>
                 <span>₹${cgstTotal}</span>
@@ -2477,7 +2515,7 @@ const Bill = () => {
                 <span>SGST ${(GST_RATE_PERCENT / 2).toFixed(1)}%:</span>
                 <span>₹${sgstTotal}</span>
               </div>
-              ` : ''}
+              `) : ''}
               <div class="invoice-row">
                 <span>Rounded Net Amount:</span>
                 <span>₹${total.toFixed(2)}</span>
@@ -2600,7 +2638,7 @@ const Bill = () => {
   };
 
   // Handle print
-  const handlePrint = async () => {
+  const handlePrint = async (stateTaxType = 'cgst_sgst') => {
     const subtotal = calculateSubtotal();
     if (subtotal === 0) {
       setError('No items with quantity > 0 to print!');
@@ -2619,7 +2657,7 @@ const Bill = () => {
     
     if (savedData) {
       const confirmedBillNumber = savedData.billNumber;
-      const printHTML = generateBillHTML(confirmedBillNumber);
+      const printHTML = generateBillHTML(confirmedBillNumber, stateTaxType);
       const adminPrint = isAdminUser;
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -2656,18 +2694,21 @@ const Bill = () => {
               }
               .bill-items-header {
                 display: grid;
-                grid-template-columns: 0.5fr 2fr 1fr 0.5fr 1fr 1fr 1fr 1.5fr;
+                grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
                 font-weight: bold;
                 padding: 4px 0;
                 border-bottom: 1px solid #000 !important;
                 font-size: 10px;
+                text-align: center;
               }
               .bill-item {
                 display: grid;
-                grid-template-columns: 0.5fr 2fr 1fr 0.5fr 1fr 1fr 1fr 1.5fr;
+                grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
                 padding: 3px 0;
                 border-bottom: 1px dotted #000 !important;
                 font-size: 9px;
+                text-align: center;
+                align-items: center;
               }
               .bill-summary {
                 margin: 10px 0;
@@ -2823,6 +2864,7 @@ const Bill = () => {
       setCustomerPhone('');
       setCustomerEmail('');
       setCustomerGST('');
+      setGstError('');
       setCustomerAddress('');
       setCustomerType('external');
       setCustomerDiscount(0);
@@ -2941,28 +2983,7 @@ const Bill = () => {
         </div>
         
         <div style={styles.panelContent}>
-          {/* Bill Type Toggle */}
           <div style={{marginBottom: '20px'}}>
-            <div style={styles.billTypeToggle}>
-              <div 
-                style={{
-                  ...styles.billTypeOption,
-                  ...(billType === 'inclusive-tax' ? styles.billTypeActive : styles.billTypeInactive)
-                }}
-                onClick={() => setBillType('inclusive-tax')}
-              >
-                Inclusive Tax Bill
-              </div>
-              <div 
-                style={{
-                  ...styles.billTypeOption,
-                  ...(billType === 'exclusive-tax' ? styles.billTypeActive : styles.billTypeInactive)
-                }}
-                onClick={() => setBillType('exclusive-tax')}
-              >
-                Exclusive Tax Bill
-              </div>
-            </div>
             <div style={{ marginTop: '12px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '500', color: '#334155', cursor: 'pointer' }}>
                 <input
@@ -3307,11 +3328,20 @@ const Bill = () => {
               
               <input
                 type="text"
-                style={styles.customerInput}
+                style={{
+                  ...styles.customerInput,
+                  borderColor: gstError ? '#ef4444' : '#e2e8f0',
+                  marginBottom: gstError ? '4px' : '8px'
+                }}
                 value={customerGST}
-                onChange={(e) => setCustomerGST(e.target.value)}
+                onChange={(e) => setCustomerGST(e.target.value.toUpperCase())}
                 placeholder="GST Number (if applicable)"
               />
+              {gstError && (
+                <div style={{ color: '#ef4444', fontSize: '11px', marginBottom: '8px', paddingLeft: '4px' }}>
+                  {gstError}
+                </div>
+              )}
             </div>
             
             {/* Discount Section */}
@@ -3693,7 +3723,7 @@ const Bill = () => {
                 ...styles.btnPrimary,
                 ...(loading || activeProducts.length === 0 ? styles.btnDisabled : {})
               }}
-              onClick={handlePrint}
+              onClick={() => setShowPrintModal(true)}
               disabled={loading || activeProducts.length === 0}
             >
               {loading ? '⏳ Saving...' : '🖨️ Print Bill'}
@@ -3754,6 +3784,70 @@ const Bill = () => {
           )}
         </div>
       </div>
+
+      {/* Print Options Modal */}
+      {showPrintModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '24px',
+            borderRadius: '16px',
+            width: '400px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', color: '#1e293b' }}>Select Bill Type</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button
+                style={{
+                  ...styles.btn,
+                  ...styles.btnPrimary,
+                  padding: '16px',
+                  justifyContent: 'flex-start'
+                }}
+                onClick={() => {
+                  setShowPrintModal(false);
+                  handlePrint('cgst_sgst');
+                }}
+              >
+                🖨️ Inter State Bill (CGST & SGST)
+              </button>
+              <button
+                style={{
+                  ...styles.btn,
+                  ...styles.btnInfo,
+                  padding: '16px',
+                  justifyContent: 'flex-start'
+                }}
+                onClick={() => {
+                  setShowPrintModal(false);
+                  handlePrint('igst');
+                }}
+              >
+                🖨️ Other State Bill (IGST)
+              </button>
+              <button
+                style={{
+                  ...styles.btn,
+                  ...styles.btnSecondary,
+                  padding: '12px',
+                  marginTop: '12px'
+                }}
+                onClick={() => setShowPrintModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
