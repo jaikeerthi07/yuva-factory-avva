@@ -76,6 +76,7 @@ const SupplierDuplicatePage = () => {
           address: supplier.address,
           phone: supplier.phone,
           gst: supplier.gst || null,   // ✅ GST from first matching supplier
+          hsn_code: supplier.hsn_code || null,
           email: supplier.email || null,
           count: 0,
           suppliers: [],
@@ -86,6 +87,9 @@ const SupplierDuplicatePage = () => {
       // ✅ Use GST if current group doesn't have one yet
       if (!groups[key].gst && supplier.gst) {
         groups[key].gst = supplier.gst;
+      }
+      if (!groups[key].hsn_code && supplier.hsn_code) {
+        groups[key].hsn_code = supplier.hsn_code;
       }
 
       groups[key].count++;
@@ -509,6 +513,7 @@ const SupplierDuplicatePage = () => {
                     <th style={styles.th}>Name</th>
                     <th style={styles.th}>Company</th>
                     <th style={styles.th}>GST Number</th>   {/* ✅ GST column header */}
+                    <th style={styles.th}>HSN Code</th>
                     <th style={styles.th}>Email</th>
                     <th style={styles.th}>Phone</th>
                     <th style={styles.th}>Address</th>
@@ -530,6 +535,11 @@ const SupplierDuplicatePage = () => {
                       <td style={styles.td}>
                         <span style={{ fontFamily: 'monospace', fontSize: '13px', color: group.gst ? '#10b981' : '#6b7280' }}>
                           {group.gst || '—'}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+                          {group.hsn_code || '—'}
                         </span>
                       </td>
                       <td style={styles.td}>{group.email || '—'}</td>

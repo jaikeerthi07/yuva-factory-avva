@@ -1,0 +1,58 @@
+[
+  {
+    "code": "21050000",
+    "label": "21050000 - Ice cream and other edible ice"
+  },
+  {
+    "code": "0401",
+    "label": "0401 - Milk and cream, not concentrated"
+  },
+  {
+    "code": "0402",
+    "label": "0402 - Milk and cream, concentrated"
+  },
+  {
+    "code": "0405",
+    "label": "0405 - Butter and other milk fats"
+  },
+  {
+    "code": "0406",
+    "label": "0406 - Cheese and curd"
+  },
+  {
+    "code": "1701",
+    "label": "1701 - Cane or beet sugar"
+  },
+  {
+    "code": "1805",
+    "label": "1805 - Cocoa powder, not sweetened"
+  },
+  {
+    "code": "1806",
+    "label": "1806 - Chocolate and food preparations with cocoa"
+  },
+  {
+    "code": "2106",
+    "label": "2106 - Food preparations (flavours and syrups)"
+  },
+  {
+    "code": "3923",
+    "label": "3923 - Plastic packing (cups and lids)"
+  },
+  {
+    "code": "4819",
+    "label": "4819 - Paper packing (cartons and boxes)"
+  },
+  {
+    "code": "4421",
+    "label": "4421 - Wood articles (wooden sticks)"
+  },
+  {
+    "code": "0802",
+    "label": "0802 - Nuts (almonds and pistachios)"
+  },
+  {
+    "code": "2007",
+    "label": "2007 - Jams, fruit jellies and purees"
+  }
+]

@@ -11,6 +11,8 @@ const api = axios.create({
   }
 });
 
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
 const Company = () => {
   const [companyInfo, setCompanyInfo] = useState({
     // Basic Information
@@ -127,9 +129,10 @@ const Company = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    const normalizedValue = name === 'gst_number' ? value.toUpperCase() : value;
     setCompanyInfo(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : (value === '' ? null : value)
+      [name]: type === 'checkbox' ? checked : (normalizedValue === '' ? null : normalizedValue)
     }));
   };
 
@@ -196,6 +199,10 @@ const Company = () => {
     }
     if (!companyInfo.phone || !companyInfo.phone.trim()) {
       showNotification('Please fill in Phone Number', 'error');
+      return;
+    }
+    if (companyInfo.gst_number && !GST_REGEX.test((companyInfo.gst_number || '').trim().toUpperCase())) {
+      showNotification('Invalid GST format. Use format like 22AAAAA0000A1Z5', 'error');
       return;
     }
     
@@ -507,6 +514,10 @@ const Company = () => {
       }
       if (!companyInfo.phone || !companyInfo.phone.trim()) {
         showNotification('Please fill in Phone Number', 'error');
+        return;
+      }
+      if (companyInfo.gst_number && !GST_REGEX.test((companyInfo.gst_number || '').trim().toUpperCase())) {
+        showNotification('Invalid GST format. Use format like 22AAAAA0000A1Z5', 'error');
         return;
       }
       setActiveTab('tax');
@@ -904,6 +915,7 @@ const Company = () => {
                         value={companyInfo.gst_number}
                         onChange={handleInputChange}
                         placeholder="Enter GST number (e.g., 22AAAAA0000A1Z5)"
+                        maxLength={15}
                         disabled={isViewing}
                         className={isViewing ? 'readonly-input' : ''}
                       />

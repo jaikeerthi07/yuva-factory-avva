@@ -1,21 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import ALL_HSN_CODES from '../data/hsnCodes.json';
 
-const ICE_CREAM_HSN_CODES = [
-  { code: '21050000', label: '21050000 - Ice cream and other edible ice (18% GST)' },
-  { code: '0401', label: '0401 - Milk and cream, not concentrated (0% GST)' },
-  { code: '0402', label: '0402 - Milk and cream, concentrated (5% GST)' },
-  { code: '0405', label: '0405 - Butter and other milk fats (12% GST)' },
-  { code: '0406', label: '0406 - Cheese and curd (12% GST)' },
-  { code: '1701', label: '1701 - Cane or beet sugar (5% GST)' },
-  { code: '1805', label: '1805 - Cocoa powder, not sweetened (18% GST)' },
-  { code: '1806', label: '1806 - Chocolate and food preps with cocoa (18% GST)' },
-  { code: '2106', label: '2106 - Food preparations (flavours/syrups) (18% GST)' },
-  { code: '3923', label: '3923 - Plastic packing (cups/lids) (18% GST)' },
-  { code: '4819', label: '4819 - Paper packing (cartons/boxes) (18% GST)' },
-  { code: '4421', label: '4421 - Wood articles (wooden sticks) (12% GST)' },
-  { code: '0802', label: '0802 - Nuts (almonds, pistachios) (12% GST)' },
-  { code: '2007', label: '2007 - Jams, fruit jellies, purées (12% GST)' }
-];
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 const SupplierPage = () => {
   // State for current step (1: Supplier Details, 2: Add Items)
@@ -159,9 +145,10 @@ const SupplierPage = () => {
   // Handle supplier input change
   const handleSupplierChange = (e) => {
     const { name, value } = e.target;
+    const normalizedValue = name === 'gst' ? value.toUpperCase() : value;
     setCurrentSupplier(prev => ({
       ...prev,
-      [name]: value
+      [name]: normalizedValue
     }));
   };
 
@@ -259,8 +246,14 @@ const SupplierPage = () => {
         phone: currentSupplier.phone || null,
         address: currentSupplier.address || null,
         gst: currentSupplier.gst || null,    // ✅ GST added
-        hsn: currentSupplier.hsn || null     // ✅ HSN added
+        hsn_code: currentSupplier.hsn || null
       };
+
+      if (supplierData.gst && !GST_REGEX.test(supplierData.gst)) {
+        alert('Invalid GST format. Use format like 22AAAAA0000A1Z5.');
+        setLoading(false);
+        return;
+      }
 
       console.log('Sending supplier data:', supplierData);
 
@@ -511,7 +504,8 @@ const SupplierPage = () => {
       phone: '',
       address: '',
       company: '',
-      gst: ''       // ✅ GST added
+      gst: '',      // ✅ GST added
+      hsn: ''
     });
     setShowSupplierPopup(true);
   };
@@ -533,7 +527,8 @@ const SupplierPage = () => {
       phone: '',
       address: '',
       company: '',
-      gst: ''       // ✅ GST added
+      gst: '',      // ✅ GST added
+      hsn: ''
     });
   };
 
@@ -1178,6 +1173,7 @@ const SupplierPage = () => {
                       <th style={styles.th}>Name</th>
                       <th style={styles.th}>Company</th>
                       <th style={styles.th}>GST Number</th>  {/* ✅ GST column */}
+                      <th style={styles.th}>HSN Code</th>
                       <th style={styles.th}>Email</th>
                       <th style={styles.th}>Phone</th>
                       <th style={styles.th}>Address</th>
@@ -1212,6 +1208,11 @@ const SupplierPage = () => {
                           <td style={styles.td}>  {/* ✅ GST value in table */}
                             <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
                               {supplier.gst || '—'}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+                              {supplier.hsn_code || '—'}
                             </span>
                           </td>
                           <td style={styles.td}>{supplier.email || '—'}</td>
@@ -1624,18 +1625,23 @@ const SupplierPage = () => {
 
               <div style={styles.formGroup}>
                 <label style={styles.label}>HSN Code</label>
-                <select
+                <input
                   name="hsn"
+                  type="text"
+                  list="supplier-hsn-codes"
                   value={currentSupplier.hsn}
                   onChange={handleSupplierChange}
                   style={styles.input}
+                  placeholder="Type HSN code (e.g. 02) or pick suggestion"
                   disabled={loading}
-                >
-                  <option value="">Select HSN Code</option>
-                  {ICE_CREAM_HSN_CODES.map(hsn => (
-                    <option key={hsn.code} value={hsn.code}>{hsn.label}</option>
+                />
+                <datalist id="supplier-hsn-codes">
+                  {ALL_HSN_CODES.map(hsn => (
+                    <option key={hsn.code} value={hsn.code}>
+                      {hsn.label}
+                    </option>
                   ))}
-                </select>
+                </datalist>
               </div>
 
               {/* Row 3: Email | Phone */}
@@ -1754,18 +1760,23 @@ const SupplierPage = () => {
 
               <div style={styles.formGroup}>
                 <label style={styles.label}>HSN</label>
-                <select
+                <input
                   name="watts"
+                  type="text"
+                  list="supplier-item-hsn-codes"
                   value={currentItem.watts}
                   onChange={handleItemChange}
                   style={styles.input}
+                  placeholder="Type HSN code (e.g. 02) or pick suggestion"
                   disabled={loading}
-                >
-                  <option value="">Select HSN Code</option>
-                  {ICE_CREAM_HSN_CODES.map(hsn => (
-                    <option key={hsn.code} value={hsn.code}>{hsn.label}</option>
+                />
+                <datalist id="supplier-item-hsn-codes">
+                  {ALL_HSN_CODES.map(hsn => (
+                    <option key={hsn.code} value={hsn.code}>
+                      {hsn.label}
+                    </option>
                   ))}
-                </select>
+                </datalist>
               </div>
 
               <div style={styles.formGroup}>

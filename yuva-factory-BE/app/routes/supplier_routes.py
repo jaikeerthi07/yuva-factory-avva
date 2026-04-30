@@ -43,10 +43,22 @@ def is_missing_supplier_gst_error(error):
     return 'unknown column' in error_text and 'gst' in error_text
 
 
+def is_missing_supplier_hsn_error(error):
+    """Detect DB errors caused by a missing suppliers.hsn_code column."""
+    error_text = str(error).lower()
+    return 'unknown column' in error_text and 'hsn_code' in error_text
+
+
 def add_supplier_gst_column():
     """Add the missing GST column only when the DB actually needs it."""
     with db.engine.begin() as connection:
         connection.execute(text("ALTER TABLE suppliers ADD COLUMN gst VARCHAR(15) NULL"))
+
+
+def add_supplier_hsn_column():
+    """Add the missing HSN column only when the DB actually needs it."""
+    with db.engine.begin() as connection:
+        connection.execute(text("ALTER TABLE suppliers ADD COLUMN hsn_code VARCHAR(20) NULL"))
 
 
 def get_supplier_gst(data):
@@ -61,6 +73,18 @@ def get_supplier_gst(data):
         return None
 
     return str(gst_value).strip().upper()
+
+
+def get_supplier_hsn(data):
+    """Accept HSN from both current and legacy request keys."""
+    hsn_value = data.get('hsn_code')
+    if hsn_value is None:
+        hsn_value = data.get('hsn')
+
+    if not hsn_value:
+        return None
+
+    return str(hsn_value).strip()
 
 
 # ==================== FILE UPLOAD ROUTES ====================
@@ -357,9 +381,12 @@ def get_suppliers():
         try:
             suppliers = Supplier.query.all()
         except Exception as query_error:
-            if not is_missing_supplier_gst_error(query_error):
+            if is_missing_supplier_gst_error(query_error):
+                add_supplier_gst_column()
+            elif is_missing_supplier_hsn_error(query_error):
+                add_supplier_hsn_column()
+            else:
                 raise
-            add_supplier_gst_column()
             suppliers = Supplier.query.all()
         return jsonify({
             'success': True,
@@ -383,9 +410,12 @@ def get_supplier(supplier_id):
         try:
             supplier = Supplier.query.get(supplier_id)
         except Exception as query_error:
-            if not is_missing_supplier_gst_error(query_error):
+            if is_missing_supplier_gst_error(query_error):
+                add_supplier_gst_column()
+            elif is_missing_supplier_hsn_error(query_error):
+                add_supplier_hsn_column()
+            else:
                 raise
-            add_supplier_gst_column()
             supplier = Supplier.query.get(supplier_id)
         if not supplier:
             return jsonify({"error": "Supplier not found"}), 404
@@ -440,7 +470,8 @@ def create_supplier():
             email=data.get('email', '').strip() if data.get('email') else None,
             phone=data.get('phone', '').strip() if data.get('phone') else None,
             address=data.get('address', '').strip() if data.get('address') else None,
-            gst=get_supplier_gst(data)
+            gst=get_supplier_gst(data),
+            hsn_code=get_supplier_hsn(data)
         )
 
         print(f"Creating supplier: {new_supplier.name}, {new_supplier.company}")
@@ -450,10 +481,12 @@ def create_supplier():
             db.session.commit()
         except Exception as create_error:
             db.session.rollback()
-            if not is_missing_supplier_gst_error(create_error):
+            if is_missing_supplier_gst_error(create_error):
+                add_supplier_gst_column()
+            elif is_missing_supplier_hsn_error(create_error):
+                add_supplier_hsn_column()
+            else:
                 raise
-
-            add_supplier_gst_column()
 
             new_supplier = Supplier(
                 name=data['name'].strip(),
@@ -461,7 +494,8 @@ def create_supplier():
                 email=data.get('email', '').strip() if data.get('email') else None,
                 phone=data.get('phone', '').strip() if data.get('phone') else None,
                 address=data.get('address', '').strip() if data.get('address') else None,
-                gst=get_supplier_gst(data)
+                gst=get_supplier_gst(data),
+                hsn_code=get_supplier_hsn(data)
             )
             db.session.add(new_supplier)
             db.session.commit()
@@ -494,9 +528,12 @@ def update_supplier(supplier_id):
         try:
             supplier = Supplier.query.get(supplier_id)
         except Exception as query_error:
-            if not is_missing_supplier_gst_error(query_error):
+            if is_missing_supplier_gst_error(query_error):
+                add_supplier_gst_column()
+            elif is_missing_supplier_hsn_error(query_error):
+                add_supplier_hsn_column()
+            else:
                 raise
-            add_supplier_gst_column()
             supplier = Supplier.query.get(supplier_id)
         if not supplier:
             return jsonify({"error": "Supplier not found"}), 404
@@ -828,9 +865,12 @@ def get_suppliers_with_items():
         try:
             suppliers = Supplier.query.all()
         except Exception as query_error:
-            if not is_missing_supplier_gst_error(query_error):
+            if is_missing_supplier_gst_error(query_error):
+                add_supplier_gst_column()
+            elif is_missing_supplier_hsn_error(query_error):
+                add_supplier_hsn_column()
+            else:
                 raise
-            add_supplier_gst_column()
             suppliers = Supplier.query.all()
         result = []
 

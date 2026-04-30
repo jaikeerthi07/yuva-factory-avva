@@ -12,6 +12,7 @@ class Supplier(db.Model):
     phone = db.Column(db.String(20))
     address = db.Column(db.Text)
     gst = db.Column(db.String(15), nullable=True)
+    hsn_code = db.Column(db.String(20), nullable=True)  # <-- Added HSN code
     created_by = db.Column(db.Integer, db.ForeignKey('login.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -30,6 +31,7 @@ class Supplier(db.Model):
             'phone': self.phone,
             'address': self.address,
             'gst': self.gst,
+            'hsn_code': self.hsn_code,  # <-- Added HSN code to dict
             'gst_number': self.gst,
             'gstNumber': self.gst,
             'created_by': self.created_by,
