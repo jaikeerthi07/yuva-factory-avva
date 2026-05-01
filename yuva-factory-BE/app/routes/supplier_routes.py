@@ -87,6 +87,20 @@ def get_supplier_hsn(data):
     return str(hsn_value).strip()
 
 
+def get_item_model(data):
+    """Accept model from both current and legacy request keys."""
+    model_value = data.get('model')
+    if model_value is None:
+        model_value = data.get('Model')
+    if model_value is None:
+        model_value = data.get('item_model')
+
+    if not model_value:
+        return None
+
+    return str(model_value).strip()
+
+
 # ==================== FILE UPLOAD ROUTES ====================
 
 @supplier_bp.route('/api/upload', methods=['POST', 'OPTIONS'])
@@ -456,17 +470,17 @@ def create_supplier():
             print("Error: No data provided")
             return jsonify({"error": "No data provided"}), 400
 
-        if not data.get('name'):
-            print("Error: Name is required")
-            return jsonify({"error": "Name is required"}), 400
+        name = data.get('name', '').strip()
+        company = data.get('company', '').strip()
 
-        if not data.get('company'):
-            print("Error: Company is required")
-            return jsonify({"error": "Company is required"}), 400
+        if not name:
+            return jsonify({"error": "Supplier Name is required"}), 400
+        if not company:
+            return jsonify({"error": "Company Name is required"}), 400
 
         new_supplier = Supplier(
-            name=data['name'].strip(),
-            company=data['company'].strip(),
+            name=name,
+            company=company,
             email=data.get('email', '').strip() if data.get('email') else None,
             phone=data.get('phone', '').strip() if data.get('phone') else None,
             address=data.get('address', '').strip() if data.get('address') else None,
@@ -512,7 +526,10 @@ def create_supplier():
         db.session.rollback()
         print(f"Create supplier error: {str(e)}")
         print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 400
+        error_msg = str(e)
+        if "duplicate entry" in error_msg.lower():
+            error_msg = "A supplier with this detail already exists."
+        return jsonify({"error": f"Database error: {error_msg}"}), 400
 
 
 @supplier_bp.route("/api/suppliers/<int:supplier_id>", methods=["PUT", "OPTIONS"])
@@ -716,19 +733,16 @@ def create_item(supplier_id):
             print("Error: Name is required")
             return jsonify({"error": "Name is required"}), 400
 
-        if not data.get('model'):
+        model_value = get_item_model(data)
+        if not model_value:
             print("Error: Model is required")
-            return jsonify({"error": "Model is required"}), 400
-
-        if data.get('buy_price') is None:
-            print("Error: Buy price is required")
-            return jsonify({"error": "Buy price is required"}), 400
+            return jsonify({"error": "Model/Watts is required"}), 400
 
         new_item = Item(
             name=data['name'].strip(),
             type=data.get('type', '').strip() if data.get('type') else None,
-            model=data['model'].strip(),
-            watts=float(data.get('watts', 0)),
+            model=model_value,
+            watts=float(data.get('watts', 0)) if data.get('watts') else 0,
             buy_price=float(data['buy_price']),
             supplier_id=supplier_id,
             status=data.get('status', 'Active'),

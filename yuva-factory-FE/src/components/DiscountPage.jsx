@@ -770,3 +770,4 @@ input[type=number] { -moz-appearance: textfield; }
 `;
 
 export default DiscountPage;
+

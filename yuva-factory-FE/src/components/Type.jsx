@@ -114,7 +114,7 @@ export default function ItemsByTypePage() {
       ...item,
       id: item.id, // Explicitly preserve ID
       name: item.name || '',
-      model: item.model || '',
+      Model: item.model || '',
       type: item.type || '',
       watts: item.watts || '',
       buyPrice: buy,
@@ -165,7 +165,7 @@ export default function ItemsByTypePage() {
     try {
       const productData = {
         name: editingItem.name || '',
-        model: editingItem.model || '',
+        Model: editingItem.model || '',
         type: editingItem.type || '',
         watts: editingItem.watts || '',
         buyPrice: parseFloat(editingItem.buyPrice) || 0,
@@ -889,7 +889,7 @@ export default function ItemsByTypePage() {
             <input
               style={styles.input}
               value={editingItem.model || ''}
-              onChange={(e) => handleEditChange('model', e.target.value)}
+              onChange={(e) => handleEditChange('Model', e.target.value)}
               placeholder="Model"
             />
           </div>
@@ -1339,3 +1339,4 @@ export default function ItemsByTypePage() {
     </div>
   );
 }
+

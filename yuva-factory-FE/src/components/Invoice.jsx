@@ -467,7 +467,7 @@ const InvoicePage = () => {
       setItems([...items, { 
         productId: product.id, 
         name: product.name, 
-        model: product.model || '', 
+        Model: product.model || '', 
         price: product.sellPrice || product.price || 0,
         mrp: product.mrp || product.sellPrice || product.price || 0,
         quantity: 1,
@@ -2515,3 +2515,5 @@ const styles = {
 };
 
 export default InvoicePage;
+
+

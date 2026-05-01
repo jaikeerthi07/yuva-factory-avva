@@ -15,7 +15,7 @@ const SupplierDuplicatePage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  const BASE_URL = 'http://localhost:5000';
+  const BASE_URL = 'http://127.0.0.1:5000';
 
   useEffect(() => { checkAuth(); }, []);
   useEffect(() => { filterGroups(); }, [searchTerm, searchField, groupedSuppliers]);
@@ -134,12 +134,13 @@ const SupplierDuplicatePage = () => {
 
   // ✅ GST added to Excel export
   const exportToExcel = () => {
-    let csvContent = "Name,Company,GST Number,Email,Phone,Address\n";
+    let csvContent = "Name,Company,GST Number,HSN Code,Email,Phone,Address\n";
     filteredGroups.forEach(group => {
       const row = [
         `"${group.name || ''}"`,
         `"${group.company || ''}"`,
         `"${group.gst || ''}"`,
+        `"${group.hsn_code || ''}"`,
         `"${group.email || ''}"`,
         `"${group.phone || ''}"`,
         `"${group.address || ''}"`
@@ -188,6 +189,7 @@ const SupplierDuplicatePage = () => {
               <th>Name</th>
               <th>Company</th>
               <th>GST Number</th>
+              <th>HSN Code</th>
               <th>Email</th>
               <th>Phone</th>
               <th>Address</th>
@@ -201,6 +203,7 @@ const SupplierDuplicatePage = () => {
           <td>${group.name || ''}</td>
           <td>${group.company || ''}</td>
           <td>${group.gst || '—'}</td>
+          <td>${group.hsn_code || '—'}</td>
           <td>${group.email || '—'}</td>
           <td>${group.phone || ''}</td>
           <td>${group.address || ''}</td>
@@ -386,6 +389,12 @@ const SupplierDuplicatePage = () => {
                   {selectedGroup.gst || '—'}
                 </div>
               </div>
+              <div style={styles.infoItem}>
+                <div style={styles.infoLabel}>HSN Code</div>
+                <div style={{ ...styles.infoValue, fontFamily: 'monospace' }}>
+                  {selectedGroup.hsn_code || '—'}
+                </div>
+              </div>
             </div>
             <div>
               <div style={styles.infoItem}>
@@ -517,6 +526,8 @@ const SupplierDuplicatePage = () => {
                     <th style={styles.th}>Email</th>
                     <th style={styles.th}>Phone</th>
                     <th style={styles.th}>Address</th>
+                    <th style={styles.th}>Items</th>
+                    <th style={styles.th}>Total Qty</th>
                     <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
@@ -545,6 +556,18 @@ const SupplierDuplicatePage = () => {
                       <td style={styles.td}>{group.email || '—'}</td>
                       <td style={styles.td}>{group.phone || '—'}</td>
                       <td style={styles.td}>{group.address || '—'}</td>
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ ...styles.badge, backgroundColor: "#334155", color: "#94a3b8" }}>
+                            {group.totalItems} {group.totalItems === 1 ? 'item' : 'items'}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={styles.td}>
+                        <span style={{ fontWeight: '600', color: '#fff' }}>
+                          {group.suppliers.reduce((sum, s) => sum + (items.filter(it => it.supplier_id === s.id).reduce((s_qty, it) => s_qty + (it.quantity || 0), 0)), 0)}
+                        </span>
+                      </td>
                       <td style={styles.td}>
                         <button
                           style={styles.viewButton}
@@ -605,3 +628,4 @@ const SupplierDuplicatePage = () => {
 };
 
 export default SupplierDuplicatePage;
+

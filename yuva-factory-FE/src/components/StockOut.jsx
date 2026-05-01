@@ -4,7 +4,7 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { 
   Search, 
   Eye, 
@@ -35,7 +35,7 @@ const BillItemsPage = () => {
   // Simple statistics - just count
   const [totalItems, setTotalItems] = useState(0);
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = 'http://127.0.0.1:5000/api';
 
   // Load items on component mount
   useEffect(() => {
@@ -94,7 +94,7 @@ const BillItemsPage = () => {
               id: item.id,
               product_id: item.product_id,
               product_name: item.product_name,
-              product_model: item.product_model,
+              product_Model: item.product_model,
               product_type: item.product_type,
               sell_price: item.sell_price,
               quantity: item.quantity,
@@ -251,7 +251,7 @@ const BillItemsPage = () => {
         `₹${item.total || 0}`
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 50,
@@ -881,3 +881,4 @@ const BillItemsPage = () => {
 };
 
 export default BillItemsPage;
+

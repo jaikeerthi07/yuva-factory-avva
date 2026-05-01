@@ -375,7 +375,7 @@ const Bill = () => {
       color: '#1e293b',
       fontSize: '14px',
     },
-    itemModel: {
+    itemFlavour: {
       fontSize: '11px',
       color: '#64748b',
       marginTop: '2px',
@@ -1569,7 +1569,7 @@ const Bill = () => {
             id: product.id,
             source: product.source || 'product',
             name: product.name,
-            model: product.model || '',
+            Flavour: product.model || '',
             sellPrice: product.sellPrice,
             quantity: 1,
             total: product.sellPrice,
@@ -2526,8 +2526,9 @@ const Bill = () => {
               <div class="bank-section">
                 <strong>Bank Details :</strong>
                 <p style="margin: 6px 0 0">Sri Yuvaas Enterprise</p>
-                <p style="margin: 4px 0">ICICI BANK : IFSC : ICIC0001543</p>
-                <p style="margin: 4px 0">A/c No : 15450010002</p>
+                <p style="margin: 4px 0">ICICI BANK : IFSC : ICIC0001543 </p>
+                 <p style="margin: 4px 0">Triplicane Branch</p>
+                <p style="margin: 4px 0">A/c No : 154305001002</p>
                 <p style="margin: 4px 0">Phonepe : ${shopDetails.phone}</p>
               </div>
               <div class="bank-section">
@@ -3524,8 +3525,9 @@ const Bill = () => {
               <div style={styles.bankSection}>
                 <strong>🏦 Bank Details :</strong>
                 <p style={{ margin: '6px 0 0' }}>Sri Yuvaas Enterprise</p>
-                <p style={{ margin: '4px 0' }}>ICICI BANK : IFSC : ICIC0001543</p>
-                <p style={{ margin: '4px 0' }}>A/c No : 15450010002</p>
+                <p style={{ margin: '4px 0' }}>ICICI BANK : IFSC : ICIC0001543 </p>
+                <p style={{ margin: '4px 0' }}>Triplicane Branch</p>
+                <p style={{ margin: '4px 0' }}>A/c No : 154305001002</p>
                 <p style={{ margin: '4px 0' }}>📱 Phonepe : {shopDetails.phone}</p>
               </div>
               <div style={styles.bankSection}>
@@ -3853,6 +3855,7 @@ const Bill = () => {
 };
 
 export default Bill;
+
 
 
 

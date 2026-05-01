@@ -1,58 +1,86 @@
 [
   {
-    "code": "21050000",
-    "label": "21050000 - Ice cream and other edible ice"
+    "code": "210500",
+    "label": "210500 - Ice cream (cone, cup, family pack, stick)",
+    "type": "finished_product",
+    "gst": "18%"
   },
   {
-    "code": "0401",
-    "label": "0401 - Milk and cream, not concentrated"
+    "code": "040210",
+    "label": "040210 - Milk powder",
+    "type": "raw_material",
+    "gst": "5%"
   },
   {
-    "code": "0402",
-    "label": "0402 - Milk and cream, concentrated"
+    "code": "040120",
+    "label": "040120 - Liquid milk",
+    "type": "raw_material",
+    "gst": "5%"
   },
   {
-    "code": "0405",
-    "label": "0405 - Butter and other milk fats"
+    "code": "040150",
+    "label": "040150 - Cream",
+    "type": "raw_material",
+    "gst": "5%"
   },
   {
-    "code": "0406",
-    "label": "0406 - Cheese and curd"
+    "code": "170199",
+    "label": "170199 - Sugar",
+    "type": "raw_material",
+    "gst": "5%"
   },
   {
-    "code": "1701",
-    "label": "1701 - Cane or beet sugar"
+    "code": "180500",
+    "label": "180500 - Cocoa powder",
+    "type": "raw_material",
+    "gst": "18%"
   },
   {
-    "code": "1805",
-    "label": "1805 - Cocoa powder, not sweetened"
+    "code": "210690",
+    "label": "210690 - Flavours, stabilizers, emulsifiers",
+    "type": "raw_material",
+    "gst": "18%"
   },
   {
-    "code": "1806",
-    "label": "1806 - Chocolate and food preparations with cocoa"
+    "code": "080290",
+    "label": "080290 - Nuts",
+    "type": "raw_material",
+    "gst": "12%"
   },
   {
-    "code": "2106",
-    "label": "2106 - Food preparations (flavours and syrups)"
+    "code": "200799",
+    "label": "200799 - Fruit pulp / puree",
+    "type": "raw_material",
+    "gst": "12%"
   },
   {
-    "code": "3923",
-    "label": "3923 - Plastic packing (cups and lids)"
+    "code": "392310",
+    "label": "392310 - Plastic containers (cups, tubs)",
+    "type": "packaging",
+    "gst": "18%"
   },
   {
-    "code": "4819",
-    "label": "4819 - Paper packing (cartons and boxes)"
+    "code": "392020",
+    "label": "392020 - Plastic film (wrappers)",
+    "type": "packaging",
+    "gst": "18%"
   },
   {
-    "code": "4421",
-    "label": "4421 - Wood articles (wooden sticks)"
+    "code": "481920",
+    "label": "481920 - Paper cartons",
+    "type": "packaging",
+    "gst": "12%"
   },
   {
-    "code": "0802",
-    "label": "0802 - Nuts (almonds and pistachios)"
+    "code": "482110",
+    "label": "482110 - Labels / stickers",
+    "type": "packaging",
+    "gst": "12%"
   },
   {
-    "code": "2007",
-    "label": "2007 - Jams, fruit jellies and purees"
+    "code": "442199",
+    "label": "442199 - Wooden sticks",
+    "type": "packaging",
+    "gst": "12%"
   }
 ]

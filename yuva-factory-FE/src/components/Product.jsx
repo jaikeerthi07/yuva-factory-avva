@@ -228,7 +228,7 @@ export default function ItemsPage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 name: existingItem.name,
-                model: existingItem.model || "",
+                Model: existingItem.model || "",
                 type: existingItem.type || "",
                 watts: existingItem.watts || "",
                 buyPrice: existingItem.buyPrice || 0,
@@ -247,7 +247,7 @@ export default function ItemsPage() {
             
             const newItem = {
               name: supplyItem.name,
-              model: supplyItem.model || "",
+              Model: supplyItem.model || "",
               type: supplyItem.type || "",
               watts: supplyItem.watts || "",
               buyPrice: parseFloat(supplyItem.buy_price || supplyItem.buyPrice || 0),
@@ -498,7 +498,7 @@ export default function ItemsPage() {
       // Prepare the data for API - ensure all fields are properly formatted
       const productData = {
         name: editingItem.name.trim(),
-        model: editingItem.model?.trim() || "",
+        Model: editingItem.model?.trim() || "",
         type: editingItem.type?.trim() || "",
         watts: editingItem.watts?.toString() || "", // Keep as watts in API
         buyPrice: parseFloat(editingItem.buyPrice) || 0,
@@ -555,7 +555,7 @@ export default function ItemsPage() {
     const newItem = calculateAmount({
       id: `new-${Date.now()}`,
       name: "",
-      model: "",
+      Model: "",
       type: "",
       watts: "", // This will be displayed as Warranty
       buyPrice: "",
@@ -687,7 +687,7 @@ export default function ItemsPage() {
         const processedItems = jsonData.map((row, index) => {
           // Try different possible column names
           const name = row['Name'] || row['name'] || row['Product'] || row['product'] || '';
-          const model = row['Model'] || row['model'] || '';
+          const model = row['Model'] || row['Model'] || '';
           const type = row['Type'] || row['type'] || '';
           const warranty = row['Warranty'] || row['watts'] || row['Warranty'] || row['Warranty Period'] || '';
           const buyPrice = parseFloat(row['Buy Price'] || row['buyPrice'] || row['Buy Price'] || row['BuyPrice'] || 0);
@@ -776,7 +776,7 @@ export default function ItemsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   name: existingItem.name,
-                  model: existingItem.model || "",
+                  Model: existingItem.model || "",
                   type: existingItem.type || "",
                   watts: existingItem.watts || "",
                   buyPrice: existingItem.buyPrice || 0,
@@ -794,7 +794,7 @@ export default function ItemsPage() {
               // Different sell price - create as new item
               const newItem = {
                 name: importItem.name,
-                model: importItem.model || "",
+                Model: importItem.model || "",
                 type: importItem.type || "",
                 watts: importItem.watts || "",
                 buyPrice: parseFloat(importItem.buyPrice) || 0,
@@ -818,7 +818,7 @@ export default function ItemsPage() {
             // Create new product
             const newItem = {
               name: importItem.name,
-              model: importItem.model || "",
+              Model: importItem.model || "",
               type: importItem.type || "",
               watts: importItem.watts || "",
               buyPrice: parseFloat(importItem.buyPrice) || 0,
@@ -1358,11 +1358,11 @@ export default function ItemsPage() {
             </div>
 
             <div style={modalStyles.formGroup}>
-              <label style={modalStyles.label}>Flavour</label>
+              <label style={modalStyles.label}>Model</label>
               <input
                 style={modalStyles.input}
                 value={editingItem.model || ""}
-                onChange={(e) => handleEditChange("model", e.target.value)}
+                onChange={(e) => handleEditChange("Model", e.target.value)}
                 placeholder="Enter flavour"
               />
             </div>
@@ -1499,7 +1499,7 @@ export default function ItemsPage() {
                           />
                         </th>
                         <th style={modalStyles.importTh}>Name</th>
-                        <th style={modalStyles.importTh}>Flavour</th>
+                        <th style={modalStyles.importTh}>Model</th>
                         <th style={modalStyles.importTh}>Type</th>
                         <th style={modalStyles.importTh}>Hsn</th>
                         <th style={modalStyles.importTh}>Sell Price</th>
@@ -1775,7 +1775,7 @@ export default function ItemsPage() {
                   ID
                 </th>
                 <th style={styles.th}>Name</th>
-                <th style={styles.th}>Flavour</th>
+                <th style={styles.th}>Model</th>
                 <th style={styles.th}>Quantity</th>
                 <th style={styles.th}>Sell Price (₹)</th>
                 <th style={styles.th}>Hsn</th>
@@ -1904,3 +1904,4 @@ export default function ItemsPage() {
     </div>
   );
 }
+

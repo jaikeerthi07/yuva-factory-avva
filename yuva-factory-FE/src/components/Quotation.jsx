@@ -3,12 +3,12 @@ import axios from "axios";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const QuotationPage = () => {
   // Create axios instance with credentials
   const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: 'http://127.0.0.1:5000/api',
     withCredentials: true,
     headers: {
       'Content-Type': 'application/json'
@@ -354,7 +354,7 @@ const QuotationPage = () => {
 
       const startY = filterY + 22;
 
-      doc.autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: startY,
@@ -499,7 +499,7 @@ const QuotationPage = () => {
       setItems([...items, {
         productId: product.id,
         name: product.name,
-        model: product.model || '',
+        Model: product.model || '',
         price: product.sellPrice || product.price || 0,
         mrp: product.mrp || product.sellPrice || product.price || 0,
         quantity: 1,
@@ -2294,3 +2294,5 @@ const styles = {
 };
 
 export default QuotationPage;
+
+

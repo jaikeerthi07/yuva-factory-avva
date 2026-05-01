@@ -1102,3 +1102,4 @@ const ItemsListPage = () => {
 };
 
 export default ItemsListPage;
+

@@ -3,7 +3,9 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
+import logoImage from '../assets/Yuva logo.jpeg';
+import QRImage from '../assets/QR.jpeg';
 import {
   Search,
   Eye,
@@ -77,11 +79,11 @@ const VisitBillPage = () => {
 
   // Company/Shop Details from Backend
   const [companyDetails, setCompanyDetails] = useState({
-    name: "SRI YUVAAS ENTERPRISE",
-    address: "Shop No.1, Chelli Amman Koil Street,",
-    city: "Lm. Government High School Road, Madhavaram, Chennai – 600052",
+    name: "SRI YUVVA ENTERPRISE",
+    address: "Shop No.1, Pillaiyar Koil Street,",
+    city: "Lm. Government High School Road, Redhills, Chennai – 600052",
     phone: "9962985868",
-    email: "[EMAIL_ADDRESS]",
+    email: "yuvaasenterprise@gmail.com",
     gst: "",
     logo: null,
     logoUrl: null
@@ -91,6 +93,418 @@ const VisitBillPage = () => {
   const [companies, setCompanies] = useState([]);
   const [showCompanySelector, setShowCompanySelector] = useState(false);
   const [loadingCompany, setLoadingCompany] = useState(false);
+  const [logoDataUrl, setLogoDataUrl] = useState('');
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printBillData, setPrintBillData] = useState(null);
+
+  // Load logo as data URL for printing
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const response = await fetch(logoImage);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoDataUrl(reader.result);
+        };
+        reader.readAsDataURL(blob);
+      } catch (err) {
+        console.error('Error loading logo:', err);
+      }
+    };
+    loadLogo();
+  }, []);
+
+  const numberToWords = (num) => {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const scales = ['', 'Thousand', 'Million', 'Billion'];
+
+    if (num === 0) return 'Zero';
+    const toWords = (n) => {
+      if (n < 20) return ones[n];
+      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+      if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + toWords(n % 100) : '');
+      return '';
+    };
+
+    let word = '';
+    let remainder = num;
+    let scaleIndex = 0;
+
+    while (remainder > 0) {
+      const chunk = remainder % 1000;
+      if (chunk) {
+        const chunkText = toWords(chunk) + (scales[scaleIndex] ? ' ' + scales[scaleIndex] : '');
+        word = chunkText + (word ? ' ' + word : '');
+      }
+      remainder = Math.floor(remainder / 1000);
+      scaleIndex += 1;
+    }
+
+    return word.trim();
+  };
+
+  const formatAmountInWords = (amount) => {
+    const integer = Math.floor(Math.abs(amount));
+    const paise = Math.round((Math.abs(amount) - integer) * 100);
+    let words = `Rupees ${numberToWords(integer)} Only`;
+    if (paise > 0) {
+      words = `Rupees ${numberToWords(integer)} and ${numberToWords(paise)} Paise Only`;
+    }
+    return amount < 0 ? `Minus ${words}` : words;
+  };
+
+  const getFreeQuantity = (quantity) => {
+    // For reports, we assume the free quantity was 1 for every 5 if it wasn't explicitly saved
+    return Math.floor((quantity || 0) / 5);
+  };
+
+  const generateBillHTML = (bill, stateTaxType = 'cgst_sgst') => {
+    const activeProducts = bill.items || [];
+    
+    // Recalculate if totals are zero
+    let subtotal = parseFloat(bill.subtotal) || 0;
+    if (subtotal === 0 && activeProducts.length > 0) {
+      subtotal = activeProducts.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+    }
+    
+    let discountAmount = parseFloat(bill.discountAmount) || 0;
+    let taxAmount = parseFloat(bill.tax) || 0;
+    let total = parseFloat(bill.total) || 0;
+    
+    if (total === 0 && subtotal > 0) {
+      total = subtotal - discountAmount + taxAmount;
+    }
+
+    const paidAmount = parseFloat(bill.paidAmount) || 0;
+    const due = Math.max(0, total - paidAmount);
+    const change = Math.max(0, paidAmount - total);
+    const amountInWords = formatAmountInWords(total);
+    const grossAmount = subtotal - discountAmount;
+    
+    const GST_RATE_PERCENT = 5;
+    const GST_MULTIPLIER = 1.05;
+    
+    const cgstTotal = (taxAmount / 2).toFixed(2);
+    const sgstTotal = (taxAmount / 2).toFixed(2);
+    const igstTotal = taxAmount.toFixed(2);
+    
+    const isTaxBill = taxAmount > 0;
+    const isExclusiveTaxBill = bill.isExclusiveTaxBill || false;
+    const customerType = bill.customerType || 'external';
+    const paymentMethod = bill.paymentMethod || 'cash';
+    const paymentStatus = bill.paymentStatus || (paidAmount >= total ? 'paid' : 'partial');
+
+    // Fixed company details for header (hardcoded fallbacks)
+    const printCompany = {
+      name: companyDetails.name || "SRI YUVVA ENTERPRISE",
+      address: companyDetails.address || "Shop No.1, Pillaiyar Koil Street,",
+      city: companyDetails.city || "Lm. Government High School Road, Redhills, Chennai – 600052",
+      phone: companyDetails.phone || "9962985868",
+      email: companyDetails.email || "yuvaasenterprise@gmail.com",
+      gst: companyDetails.gst || ""
+    };
+
+    // Fix for 5.5 hour time difference (UTC to IST)
+    const parseBillDate = (dateSource) => {
+      if (!dateSource) return new Date();
+      const d = new Date(dateSource);
+      if (typeof dateSource === 'string' && !dateSource.includes('Z') && !dateSource.includes('+')) {
+        // If the string is "YYYY-MM-DD HH:MM:SS" (UTC from backend), force it to UTC
+        const utcDate = new Date(dateSource.replace(' ', 'T') + 'Z');
+        if (!isNaN(utcDate.getTime())) return utcDate;
+      }
+      return d;
+    };
+
+    const billDate = parseBillDate(bill.createdAt);
+
+    const currentDate = billDate.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'Asia/Kolkata'
+    });
+    const currentTime = billDate.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata'
+    });
+
+    // Helper functions for line items
+    const getLineTaxAmount = (item) => {
+      const itemTotal = parseFloat(item.total) || 0;
+      if (!isTaxBill || itemTotal <= 0) return 0;
+      if (isExclusiveTaxBill) {
+        return (itemTotal / GST_MULTIPLIER) * (GST_RATE_PERCENT / 100);
+      }
+      return itemTotal - (itemTotal / GST_MULTIPLIER);
+    };
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Bill - ${bill.billNumber}</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            @page { size: A4 portrait; margin: 0; }
+            body { margin: 0; padding: 8px; width: 210mm; min-height: 297mm; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.4; background: white; }
+            #billPaper { width: 100%; margin: 0 auto; padding: 8px; background: white; }
+            .invoice-header { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 8px; align-items: flex-start; }
+            .logo-container { display: flex; gap: 8px; align-items: flex-start; }
+            .logo-image { width: 90px; height: 90px; object-fit: contain; border: 1px solid #ccc; flex-shrink: 0; }
+            .seller-address { flex: 1; font-size: 11px; line-height: 1.3; }
+            .seller-address h2 { font-size: 16px; margin: 0 0 4px 0; text-transform: uppercase; font-weight: 700; }
+            .seller-address p { margin: 2px 0; font-size: 10px; }
+            .invoice-meta-container { display: flex; flex-direction: column; gap: 6px; min-width: 200px; }
+            .invoice-top-right { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+            .original-badge { padding: 3px 6px; background: #000; color: #fff; font-size: 9px; font-weight: bold; border-radius: 2px; }
+            .qr-code { width: 140px; height: 140px; border: 1px solid #000; }
+            .invoice-details { padding: 6px 8px; border: 1px solid #000; background: #fafafa; font-size: 10px; line-height: 1.3; }
+            .invoice-row { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px; }
+            .address-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+            .address-box, .invoice-meta-box { border: 1px solid #000; padding: 6px; background: #fff; font-size: 10px; line-height: 1.3; min-height: 90px; }
+            .address-box strong { display: block; margin-bottom: 4px; font-weight: 700; font-size: 10px; }
+            .address-box p { margin: 2px 0; font-size: 9px; }
+            .invoice-meta-box { background: #fafafa; }
+            .amount-words { margin-top: 8px; margin-bottom: 6px; font-size: 11px; font-weight: bold; border-top: 1px dashed #000; padding-top: 6px; }
+            .gross-summary { display: grid; gap: 2px; padding: 6px; border: 1px solid #000; background: #fafafa; font-size: 10px; line-height: 1.3; margin-bottom: 8px; }
+            .bank-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+            .bank-section { border: 1px solid #000; padding: 6px; background: #fff; font-size: 10px; line-height: 1.3; }
+            .bank-section strong { display: block; font-weight: 700; margin-bottom: 3px; }
+            .bank-section p { margin: 2px 0; font-size: 9px; }
+            .terms-section { font-size: 9px; margin-top: 8px; padding: 6px; border: 1px dashed #000; background: #fff; line-height: 1.3; }
+            .signature-row { display: flex; justify-content: space-between; margin-top: 12px; font-size: 10px; gap: 6px; }
+            .signature-box { flex: 1; text-align: center; border-top: 1px solid #000; padding-top: 4px; color: #333; font-size: 9px; }
+            .bill-info { margin: 8px 0; padding: 4px 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000; }
+            .bill-info-row { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 9px; }
+            .bill-number { font-weight: bold; color: #0066cc; }
+            .customer-section { margin: 8px 0; padding: 6px; background: #f9f9f9; border-radius: 2px; border: 1px solid #ddd; }
+            .customer-row { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 9px; }
+            .customer-label { font-weight: bold; color: #333; font-size: 9px; }
+            .customer-value { color: #333; text-align: right; font-size: 9px; }
+            .customer-type-badge { padding: 1px 4px; border-radius: 2px; font-size: 8px; font-weight: bold; text-transform: uppercase; }
+            .internal-badge { background: #e3f2fd; color: #01579b; }
+            .external-badge { background: #fff3e0; color: #e65100; }
+            .vehicle-section { margin: 6px 0; padding: 4px; background: #f5f5f5; border-radius: 2px; border: 1px solid #ddd; }
+            .vehicle-row { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 9px; }
+            .bill-items { margin: 8px 0; }
+            .bill-items-header { display: grid; grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'}; font-weight: bold; padding: 3px 2px; border-bottom: 1px solid #000; border-top: 1px solid #000; font-size: 9px; background: #f0f0f0; gap: 4px; text-align: center; }
+            .bill-item { display: grid; grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'}; padding: 2px 2px; border-bottom: 1px dotted #ddd; font-size: 8px; gap: 4px; align-items: center; text-align: center; }
+            .bill-item-name { display: flex; flex-direction: column; text-align: left; }
+            .bill-item-small { font-size: 7px; color: #666; margin-top: 1px; }
+            .bill-summary { margin: 8px 0; padding: 6px 0; border-top: 1px solid #000; }
+            .summary-row { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 10px; padding: 2px 0; }
+            .summary-row-total { font-weight: bold; font-size: 11px; border-top: 1px dashed #000; padding-top: 4px; margin-top: 4px; color: #333; }
+            .payment-section { margin: 8px 0; padding: 6px; background: #f9f9f9; border-radius: 2px; border: 1px solid #ddd; font-size: 9px; }
+            .payment-row { display: flex; justify-content: space-between; margin-bottom: 3px; align-items: center; font-size: 9px; }
+            .bill-footer { text-align: center; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #000; font-size: 8px; }
+            .bill-footer p { margin-bottom: 2px; color: #666; font-size: 8px; }
+            .change-amount { font-weight: bold; color: ${paidAmount >= total ? '#28a745' : '#dc3545'}; font-size: 9px; }
+            .created-by { margin-top: 4px; padding-top: 3px; border-top: 1px dotted #ccc; font-size: 8px; text-align: center; color: #666; }
+            .discount-section { margin: 6px 0; padding: 6px; background: #fff9e6; border-radius: 2px; border: 1px solid #ffe58f; font-size: 9px; }
+            .discount-amount { font-weight: 600; color: #ff7a00; }
+          </style>
+        </head>
+        <body>
+          <div id="billPaper">
+            <div class="invoice-header">
+              <div class="logo-container">
+                <img src="${logoDataUrl}" alt="Company Logo" class="logo-image" />
+                <div class="seller-address">
+                  <h2>${printCompany.name}</h2>
+                  <p>${printCompany.address}</p>
+                  <p>${printCompany.city}</p>
+                  <p>Contact number : ${printCompany.phone}</p>
+                  <p>E-mail : ${printCompany.email}</p>
+                  ${isTaxBill && printCompany.gst ? `<p>GST: ${printCompany.gst}</p>` : ''}
+                </div>
+              </div>
+              <div class="invoice-meta-container">
+                <div class="invoice-top-right">
+                  <span class="original-badge">ORIGINAL</span>
+                  <img class="qr-code" src="${QRImage}" alt="QR Code" />
+                </div>
+              </div>
+            </div>
+
+            <div class="address-grid">
+              <div class="address-box">
+                <strong>SELLING ADDRESS</strong>
+                <p>${printCompany.address}</p>
+                <p>${printCompany.city}</p>
+                <p>PINCODE:600052 · ${printCompany.phone}</p>
+              </div>
+              <div class="address-box">
+                <strong>SHIPPING ADDRESS</strong>
+                <p>${bill.customerName || 'Walk-in Customer'}</p>
+                ${bill.customerAddress ? `<p>${bill.customerAddress}</p>` : ''}
+                ${bill.customerPhone ? `<p>Ph: ${bill.customerPhone}</p>` : ''}
+              </div>
+              <div class="invoice-meta-box">
+                <div class="invoice-row"><span>Invoice No :</span><span>${bill.billNumber || '---'}</span></div>
+                <div class="invoice-row"><span>Date :</span><span>${currentDate}</span></div>
+                <div class="invoice-row"><span>Customer ID :</span><span>${bill.customerPhone || bill.customerEmail || '-'}</span></div>
+                <div class="invoice-row"><span>D.C. No :</span><span>-</span></div>
+              </div>
+            </div>
+
+            <div class="bill-info">
+              <div class="bill-info-row">
+                <span>Bill No:</span>
+                <span class="bill-number">${bill.billNumber}</span>
+              </div>
+              <div class="bill-info-row">
+                <span>Date:</span>
+                <span>${currentDate}</span>
+              </div>
+              <div class="bill-info-row">
+                <span>Time:</span>
+                <span>${currentTime}</span>
+              </div>
+            </div>
+            
+            ${(bill.vehicleName || bill.vehicleNumber) ? `
+            <div class="vehicle-section">
+              ${bill.vehicleName ? `<div class="vehicle-row"><span class="customer-label">Vehicle:</span><span>${bill.vehicleName}</span></div>` : ''}
+              ${bill.vehicleNumber ? `<div class="vehicle-row"><span class="customer-label">Vehicle No:</span><span>${bill.vehicleNumber}</span></div>` : ''}
+            </div>
+            ` : ''}
+            
+            <div class="customer-section">
+              <div class="customer-row">
+                <span class="customer-label">Customer Type:</span>
+                <span class="customer-type-badge ${customerType === 'internal' ? 'internal-badge' : 'external-badge'}">
+                  ${customerType === 'internal' ? '🏢 INTERNAL' : '👤 EXTERNAL'}
+                </span>
+              </div>
+              <div class="customer-row">
+                <span class="customer-label">Name:</span>
+                <span class="customer-value">${bill.customerName || 'Walk-in Customer'}</span>
+              </div>
+              ${bill.customerPhone ? `<div class="customer-row"><span class="customer-label">Phone:</span><span class="customer-value">${bill.customerPhone}</span></div>` : ''}
+              ${bill.customerGst && isTaxBill ? `<div class="customer-row"><span class="customer-label">GST:</span><span class="customer-value">${bill.customerGst}</span></div>` : ''}
+            </div>
+            
+            ${discountAmount > 0 ? `
+            <div class="discount-section">
+              <div class="discount-amount">
+                Discount Amount: -₹${discountAmount.toFixed(2)}
+                ${customerType === 'internal' ? ' (Staff discount)' : ''}
+              </div>
+            </div>
+            ` : ''}
+            
+            <div class="bill-items">
+              <div class="bill-items-header">
+                <span>S.N</span>
+                <span style="text-align: left;">Item Name</span>
+                <span>HSN</span>
+                <span>Qty</span>
+                <span>Free</span>
+                <span>Rate</span>
+                ${isTaxBill ? (stateTaxType === 'igst' ? `<span>IGST ${GST_RATE_PERCENT}%</span>` : `<span>CGST 2.5%</span><span>SGST 2.5%</span>`) : ''}
+                <span>Total</span>
+              </div>
+              <div>
+                ${activeProducts.map((item, idx) => {
+                  const rate = parseFloat(item.sellPrice || 0);
+                  const qty = item.quantity || 0;
+                  const freeQty = getFreeQuantity(qty);
+                  const itemTotal = parseFloat(item.total || 0);
+                  const itemTax = getLineTaxAmount(item);
+                  const cgstAmt = (itemTax / 2).toFixed(2);
+                  const sgstAmt = (itemTax / 2).toFixed(2);
+                  const igstAmt = itemTax.toFixed(2);
+
+                  return `
+                    <div class="bill-item">
+                      <span>${idx + 1}</span>
+                      <span class="bill-item-name">
+                        ${item.productName.length > 25 ? item.productName.substring(0, 22) + '...' : item.productName}
+                        ${item.productFlavour ? `<small class="bill-item-small">${item.productFlavour}</small>` : ''}
+                      </span>
+                      <span>${item.hsn || '21050000'}</span>
+                      <span>${qty}</span>
+                      <span>${freeQty}</span>
+                      <span>${rate.toFixed(2)}</span>
+                      ${isTaxBill ? (stateTaxType === 'igst' ? `<span>${igstAmt}</span>` : `<span>${cgstAmt}</span><span>${sgstAmt}</span>`) : ''}
+                      <span>${itemTotal.toFixed(2)}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+            
+            <div class="bill-summary">
+              <div class="summary-row"><span>Subtotal:</span><span>₹${subtotal.toFixed(2)}</span></div>
+              ${discountAmount > 0 ? `<div class="summary-row"><span>Discount:</span><span>-₹${discountAmount.toFixed(2)}</span></div>` : ''}
+              <div class="summary-row"><span>After Discount:</span><span>₹${(subtotal - discountAmount).toFixed(2)}</span></div>
+              ${isTaxBill ? `<div class="summary-row"><span>GST (${GST_RATE_PERCENT}%):</span><span>+₹${taxAmount.toFixed(2)}</span></div>` : ''}
+              <div class="summary-row summary-row-total"><span>Total:</span><span>₹${total.toFixed(2)}</span></div>
+            </div>
+
+            <div class="amount-words">Amount in words : ${amountInWords}</div>
+
+            <div class="gross-summary">
+              <div class="invoice-row"><span>Gross Amt:</span><span>₹${grossAmount.toFixed(2)}</span></div>
+              ${isTaxBill ? (stateTaxType === 'igst' ? `
+              <div class="invoice-row"><span>IGST ${GST_RATE_PERCENT}%:</span><span>₹${igstTotal}</span></div>
+              ` : `
+              <div class="invoice-row"><span>CGST 2.5%:</span><span>₹${cgstTotal}</span></div>
+              <div class="invoice-row"><span>SGST 2.5%:</span><span>₹${sgstTotal}</span></div>
+              `) : ''}
+              <div class="invoice-row"><span>Rounded Net Amount:</span><span>₹${total.toFixed(2)}</span></div>
+            </div>
+
+            <div class="bank-details">
+              <div class="bank-section">
+                <strong>Bank Details :</strong>
+                <p style="margin: 6px 0 0">Sri Yuvaas Enterprise</p>
+                <p style="margin: 4px 0">ICICI BANK : IFSC : ICIC0001543 </p>
+                <p style="margin: 4px 0">Triplicane Branch</p>
+                <p style="margin: 4px 0">A/c No : 154305001002</p>
+                <p style="margin: 4px 0">Phonepe : ${companyDetails.phone}</p>
+              </div>
+              <div class="bank-section">
+                <strong>Remarks :</strong>
+                <p style="margin: 6px 0 0">Goods once sold will not be taken back.</p>
+                <p style="margin: 4px 0">24% interest p.a. on overdue payments.</p>
+              </div>
+            </div>
+
+            <div class="terms-section">Goods once sold will not be taken back. If the payment is not made within due date, we will charge interest on the bill amount. Please pay as per bill amount only.</div>
+
+            <div class="signature-row">
+              <div class="signature-box">Prepared by</div>
+              <div class="signature-box">Received by</div>
+              <div class="signature-box">Authorized Signature</div>
+            </div>
+
+            <div class="payment-section">
+              <div class="payment-row"><span>Payment Method:</span><span>${paymentMethod.toUpperCase()}</span></div>
+              <div class="payment-row"><span>Paid Amount:</span><span>₹${paidAmount.toFixed(2)}</span></div>
+              <div class="payment-row"><span>Payment Status:</span><span style="font-weight: bold;">${paymentStatus.toUpperCase()}</span></div>
+              ${due > 0.01 ? `<div class="payment-row"><span>Due Amount:</span><span>₹${due.toFixed(2)}</span></div>` : ''}
+              ${paymentMethod === 'cash' && paidAmount >= total ? `<div class="payment-row"><span>Change:</span><span class="change-amount">₹${change.toFixed(2)}</span></div>` : ''}
+            </div>
+            
+            <div class="bill-footer">
+              <p>Thank you for your purchase!</p>
+              <p>Goods once sold not returnable</p>
+              <p>** Computer generated bill **</p>
+              <div class="created-by">Bill created by: ${bill.createdByName || bill.createdBy || 'Admin'}</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -106,7 +520,7 @@ const VisitBillPage = () => {
   });
   const [sortBy, setSortBy] = useState('newest');
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = 'http://127.0.0.1:5000/api';
 
   // Create axios instance with credentials
   const api = axios.create({
@@ -181,12 +595,12 @@ const VisitBillPage = () => {
         setSelectedCompanyId(firstCompany.id);
         await fetchCompanyDetails(firstCompany.id);
       } else {
-        // Use default company details
+        // Use default empty company details
         setCompanyDetails({
-          name: "M3 Cars",
-          address: "No.71, M.T.H.road (Opp padi post office)",
-          city: "Padi, Chennai - 600 050",
-          phone: "98657 09626",
+          name: "",
+          address: "",
+          city: "",
+          phone: "",
           email: "",
           gst: "",
           logo: null,
@@ -197,13 +611,13 @@ const VisitBillPage = () => {
     } catch (err) {
       console.error('Error fetching companies:', err);
       showMessage("error", "❌ Failed to fetch company details");
-      // Use default company details
+      // Use default empty company details
       setCompanyDetails({
-        name: "M3 Cars",
-        address: "No.71, M.T.H.road (Opp padi post office)",
-        city: "Padi, Chennai - 600 050",
-        phone: "98657 09626",
-        email: "",
+        name: "SRI YUVVA ENTERPRISE",
+        address: "Shop No.1, Pillaiyar Koil Street,",
+        city: "Lm. Government High School Road, Redhills, Chennai – 600052",
+        phone: "9962985868",
+        email: "yuvaasenterprise@gmail.com",
         gst: "",
         logo: null,
         logoUrl: null
@@ -222,11 +636,11 @@ const VisitBillPage = () => {
 
       const company = response.data;
       setCompanyDetails({
-        name: company.name || "M3 Cars",
-        address: company.address || "No.71, M.T.H.road (Opp padi post office)",
-        city: company.city || "Padi, Chennai - 600 050",
-        phone: company.phone || "98657 09626",
-        email: company.email || "",
+        name: company.name || "SRI YUVAAS ENTERPRISE",
+        address: company.address || "Shop No.1, Pillaiyar Koil Street,",
+        city: company.city || "Lm. Government High School Road, Redhills, Chennai – 600052",
+        phone: company.phone || "9962985868",
+        email: company.email || "yuvaasenterprise@gmail.com",
         gst: company.gst_number || company.gst || "",
         logo: company.logo || null,
         logoUrl: company.logo_url || null
@@ -327,32 +741,38 @@ const VisitBillPage = () => {
 
         return {
           id: bill.id || bill._id || Math.random().toString(),
-          billNumber: bill.billNumber || bill.bill_number || bill.billNo || bill.invoiceNo || `BILL-${Date.now()}`,
+          billNumber: bill.billNumber || bill.bill_number || bill.billNo || bill.invoiceNo || bill.bill_no || `BILL-${Date.now()}`,
           customerName: bill.customerName || bill.customer_name || bill.customer?.name || 'Walk-in Customer',
           customerPhone: bill.customerPhone || bill.customer_phone || bill.customer?.phone || '',
           customerEmail: bill.customerEmail || bill.customer_email || bill.customer?.email || '',
           customerGst: bill.customerGst || bill.customer_gst || bill.customer?.gst || '',
           customerAddress: bill.customerAddress || bill.customer_address || bill.customer?.address || '',
           customerType: bill.customerType || bill.customer_type || bill.customer?.type || 'external',
-          subtotal: subtotal,
+          subtotal: parseFloat(bill.subtotal || bill.sub_total || bill.subTotal || 0),
           discountValue: discountValue,
           discountAmount: discountAmount,
           discountType: discountType,
-          tax: parseFloat(bill.tax || bill.taxAmount || 0),
+          tax: parseFloat(bill.tax || bill.taxAmount || bill.tax_amount || 0),
           taxType: bill.taxType || bill.tax_type || 'percentage',
-          total: parseFloat(bill.total || bill.grandTotal || bill.amount || 0),
+          total: parseFloat(bill.total || bill.grandTotal || bill.grand_total || bill.amount || bill.totalAmount || 0),
           paidAmount: parseFloat(bill.paidAmount || bill.paid_amount || bill.paid || 0),
           changeAmount: parseFloat(bill.changeAmount || bill.change_amount || bill.change || 0),
           paymentMethod: bill.paymentMethod || bill.payment_method || bill.payment?.method || 'cash',
           createdAt: bill.createdAt || bill.created_at || bill.date || new Date().toISOString(),
           updatedAt: bill.updatedAt || bill.updated_at,
           createdBy: bill.createdBy || bill.created_by,
+          createdByName: bill.createdByName || bill.created_by_name || 'Admin',
+          vehicleName: bill.vehicleName || bill.vehicle_name || '',
+          vehicleNumber: bill.vehicleNumber || bill.vehicle_number || '',
+          isExclusiveTaxBill: bill.isExclusiveTaxBill || bill.is_exclusive_tax || false,
+          paymentStatus: bill.paymentStatus || bill.payment_status || (parseFloat(bill.paidAmount || bill.paid_amount || 0) >= parseFloat(bill.total || bill.grandTotal || 0) ? 'paid' : 'partial'),
           items: Array.isArray(bill.items) ? bill.items.map(item => ({
             id: item.id || item._id,
             productId: item.productId || item.product_id || item.product,
             productName: item.productName || item.product_name || item.name || 'Unknown',
-            productModel: item.productModel || item.product_model || item.model || '',
+            productFlavour: item.productFlavour || item.product_flavour || item.productModel || item.product_model || item.model || item.flavour || '',
             productType: item.productType || item.product_type || item.type || '',
+            hsn: item.hsn || item.hns || '21050000',
             sellPrice: parseFloat(item.sellPrice || item.sell_price || item.price || 0),
             quantity: parseInt(item.quantity || item.qty || 1),
             total: parseFloat(item.total || item.subtotal || 0),
@@ -483,6 +903,11 @@ const VisitBillPage = () => {
         paidAmount: parseFloat(billData.paidAmount || billData.paid_amount || billData.paid || 0),
         changeAmount: parseFloat(billData.changeAmount || billData.change_amount || billData.change || 0),
         paymentMethod: billData.paymentMethod || billData.payment_method || billData.payment?.method || 'cash',
+        paymentStatus: billData.paymentStatus || billData.payment_status || (parseFloat(billData.paidAmount || billData.paid_amount || 0) >= parseFloat(billData.total || billData.grandTotal || 0) ? 'paid' : 'partial'),
+        vehicleName: billData.vehicleName || billData.vehicle_name || '',
+        vehicleNumber: billData.vehicleNumber || billData.vehicle_number || '',
+        isExclusiveTaxBill: billData.isExclusiveTaxBill || billData.is_exclusive_tax || false,
+        createdByName: billData.createdByName || billData.created_by_name || 'Admin',
         createdAt: billData.createdAt || billData.created_at || billData.date || new Date().toISOString(),
         updatedAt: billData.updatedAt || billData.updated_at,
         createdBy: billData.createdBy || billData.created_by,
@@ -490,8 +915,9 @@ const VisitBillPage = () => {
           id: item.id || item._id,
           productId: item.productId || item.product_id || item.product,
           productName: item.productName || item.product_name || item.name || 'Unknown',
-          productModel: item.productModel || item.product_model || item.model || '',
+          productFlavour: item.productFlavour || item.product_flavour || item.productModel || item.product_model || item.model || item.flavour || '',
           productType: item.productType || item.product_type || item.type || '',
+          hsn: item.hsn || item.hns || '21050000',
           sellPrice: parseFloat(item.sellPrice || item.sell_price || item.price || 0),
           quantity: parseInt(item.quantity || item.qty || 1),
           total: parseFloat(item.total || item.subtotal || 0),
@@ -809,10 +1235,10 @@ const VisitBillPage = () => {
         filterY += 5;
       }
 
-      const totalAmount = filteredBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
-      const totalPaid = filteredBills.reduce((sum, bill) => sum + (bill.paidAmount || 0), 0);
+      const totalAmount = filteredBills.reduce((sum, bill) => sum + (parseFloat(bill.total) || 0), 0);
+      const totalPaid = filteredBills.reduce((sum, bill) => sum + (parseFloat(bill.paidAmount) || 0), 0);
       const totalDue = totalAmount - totalPaid;
-      const totalDiscount = filteredBills.reduce((sum, bill) => sum + (bill.discountAmount || 0), 0);
+      const totalDiscount = filteredBills.reduce((sum, bill) => sum + (parseFloat(bill.discountAmount) || 0), 0);
 
       doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
@@ -828,12 +1254,18 @@ const VisitBillPage = () => {
       ];
 
       const tableRows = filteredBills.map(bill => {
-        // Format discount display
+        // Format discount display safely
+        const discountAmount = parseFloat(bill.discountAmount) || 0;
+        const discountValue = parseFloat(bill.discountValue) || 0;
+        const total = parseFloat(bill.total) || 0;
+        const paidAmount = parseFloat(bill.paidAmount) || 0;
+        const subtotal = parseFloat(bill.subtotal) || 0;
+
         let discountDisplay = '';
         if (bill.discountType === 'percentage') {
-          discountDisplay = `${bill.discountValue}%`;
+          discountDisplay = `${discountValue}%`;
         } else {
-          discountDisplay = `₹${bill.discountAmount.toFixed(2)}`;
+          discountDisplay = `₹${discountAmount.toFixed(2)}`;
         }
 
         return [
@@ -842,18 +1274,18 @@ const VisitBillPage = () => {
           (bill.customerName || 'Walk-in').substring(0, 20),
           (bill.customerType || 'ext').substring(0, 3).toUpperCase(),
           bill.itemCount || 0,
-          (bill.subtotal || 0).toFixed(2),
+          subtotal.toFixed(2),
           discountDisplay,
-          (bill.total || 0).toFixed(2),
-          (bill.paidAmount || 0).toFixed(2),
-          ((bill.total || 0) - (bill.paidAmount || 0)).toFixed(2),
+          total.toFixed(2),
+          paidAmount.toFixed(2),
+          (total - paidAmount).toFixed(2),
           (bill.paymentMethod || 'cash').substring(0, 3).toUpperCase()
         ];
       });
 
       const startY = filterY + 42;
 
-      doc.autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: startY,
@@ -873,252 +1305,46 @@ const VisitBillPage = () => {
   };
 
   const handlePrintBill = (bill) => {
+    handleExecutePrint(bill, 'cgst_sgst');
+  };
+
+  const handleExecutePrint = (bill, stateTaxType) => {
+    if (!bill) return;
+
     const printWindow = window.open('', '_blank');
-
-    const processedBill = {
-      ...bill,
-      subtotal: parseFloat(bill.subtotal) || 0,
-      discountValue: parseFloat(bill.discountValue) || 0,
-      discountAmount: parseFloat(bill.discountAmount) || 0,
-      discountType: bill.discountType || 'amount',
-      tax: parseFloat(bill.tax) || 0,
-      total: parseFloat(bill.total) || 0,
-      paidAmount: parseFloat(bill.paidAmount) || 0,
-      changeAmount: parseFloat(bill.changeAmount) || 0,
-      dueAmount: (parseFloat(bill.total) || 0) - (parseFloat(bill.paidAmount) || 0)
-    };
-
-    // Format discount display
-    let discountDisplay = '';
-    if (processedBill.discountType === 'percentage') {
-      discountDisplay = `${processedBill.discountValue}% (₹${processedBill.discountAmount.toFixed(2)})`;
-    } else {
-      discountDisplay = `₹${processedBill.discountAmount.toFixed(2)}`;
+    if (!printWindow) {
+      alert('Pop-up blocked! Please allow pop-ups for this site to print.');
+      return;
     }
 
+    const printHTML = generateBillHTML(bill, stateTaxType);
+    
     printWindow.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
-          <title>Bill - ${processedBill.billNumber}</title>
+          <title>Bill - ${bill.billNumber}</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body { 
-              font-family: 'Courier New', monospace; 
-              padding: 20px; 
-              max-width: 300px; 
-              margin: 0 auto; 
-              background: #fff; 
-            }
-            .header { 
-              text-align: center; 
-              margin-bottom: 20px; 
-            }
-            .header h1 { 
-              font-size: 24px; 
-              margin-bottom: 2px; 
-              color: #000; 
-            }
-            .header h3 {
-              font-size: 14px;
-              margin: 2px 0;
-              color: #333;
-            }
-            .header p { 
-              margin: 2px 0; 
-              font-size: 12px; 
-              color: #333; 
-            }
-            .logo {
-              max-width: 80px;
-              max-height: 80px;
-              margin-bottom: 10px;
-            }
-            .info { 
-              border-top: 1px dashed #000; 
-              border-bottom: 1px dashed #000; 
-              padding: 10px 0; 
-              margin: 15px 0; 
-            }
-            .info-row { 
-              display: flex; 
-              justify-content: space-between; 
-              font-size: 12px; 
-              margin-bottom: 3px; 
-              color: #000; 
-            }
-            .customer-section {
-              margin: 10px 0;
-              padding: 8px;
-              background: #f9f9f9;
-              border: 1px solid #ddd;
-            }
-            .customer-row {
-              display: flex;
-              justify-content: space-between;
-              font-size: 11px;
-              margin-bottom: 3px;
-            }
-            .customer-type {
-              padding: 2px 6px;
-              border-radius: 3px;
-              font-size: 10px;
-              font-weight: bold;
-              background: ${processedBill.customerType === 'internal' ? '#cce5ff' : '#fff3cd'};
-              color: ${processedBill.customerType === 'internal' ? '#004085' : '#856404'};
-            }
-            .items { 
-              margin: 15px 0; 
-            }
-            .item-header { 
-              display: grid; 
-              grid-template-columns: 2fr 1fr 1fr 1fr; 
-              font-weight: bold; 
-              font-size: 11px; 
-              border-bottom: 1px solid #000; 
-              padding-bottom: 5px; 
-              color: #000; 
-            }
-            .item { 
-              display: grid; 
-              grid-template-columns: 2fr 1fr 1fr 1fr; 
-              font-size: 11px; 
-              padding: 3px 0; 
-              border-bottom: 1px dotted #ccc; 
-              color: #000; 
-            }
-            .summary { 
-              margin: 15px 0; 
-              border-top: 1px solid #000; 
-              padding-top: 10px; 
-            }
-            .summary-row { 
-              display: flex; 
-              justify-content: space-between; 
-              font-size: 12px; 
-              margin-bottom: 3px; 
-              color: #000; 
-            }
-            .total { 
-              font-weight: bold; 
-              font-size: 14px; 
-              border-top: 1px dashed #000; 
-              padding-top: 5px; 
-              margin-top: 5px; 
-              color: #000; 
-            }
-            .footer { 
-              text-align: center; 
-              margin-top: 20px; 
-              font-size: 10px; 
-              border-top: 1px dashed #000; 
-              padding-top: 10px; 
-              color: #666; 
-            }
-            .amount-due {
-              font-weight: bold;
-              color: ${processedBill.dueAmount > 0 ? '#dc2626' : '#059669'};
-            }
-            .shop-details {
-              margin-bottom: 5px;
-            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { margin: 0; padding: 0; width: 210mm; font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.3; background: white; }
+            #billPaper { width: 210mm; margin: 0 auto; padding: 12px; background: white; }
+            * { background: white !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { size: A4 portrait; margin: 0; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <img src="/m3-logo.jpeg" class="logo" alt="M3 Cars Logo" />
-            <h1>${companyDetails.name}</h1>
-            <p>${companyDetails.address}</p>
-            <p>${companyDetails.city}</p>
-            ${companyDetails.phone ? `<p>Phone: ${companyDetails.phone}</p>` : ''}
-            ${companyDetails.gst ? `<p>GST: ${companyDetails.gst}</p>` : ''}
-          </div>
-          
-          <div class="info">
-            <div class="info-row"><span>Bill No:</span><span>${processedBill.billNumber}</span></div>
-            <div class="info-row"><span>Date:</span><span>${new Date(processedBill.createdAt).toLocaleDateString()}</span></div>
-            <div class="info-row"><span>Time:</span><span>${new Date(processedBill.createdAt).toLocaleTimeString()}</span></div>
-          </div>
-          
-          <div class="customer-section">
-            <div class="customer-row">
-              <span><strong>Customer Type:</strong></span>
-              <span class="customer-type">${(processedBill.customerType || 'external').toUpperCase()}</span>
-            </div>
-            <div class="customer-row">
-              <span><strong>Name:</strong></span>
-              <span>${processedBill.customerName || 'Walk-in Customer'}</span>
-            </div>
-            ${processedBill.customerPhone ? `
-            <div class="customer-row">
-              <span><strong>Phone:</strong></span>
-              <span>${processedBill.customerPhone}</span>
-            </div>` : ''}
-            ${processedBill.customerEmail ? `
-            <div class="customer-row">
-              <span><strong>Email:</strong></span>
-              <span>${processedBill.customerEmail}</span>
-            </div>` : ''}
-            ${processedBill.customerAddress ? `
-            <div class="customer-row">
-              <span><strong>Address:</strong></span>
-              <span>${processedBill.customerAddress}</span>
-            </div>` : ''}
-            ${processedBill.customerGst ? `
-            <div class="customer-row">
-              <span><strong>GST:</strong></span>
-              <span>${processedBill.customerGst}</span>
-            </div>` : ''}
-          </div>
-          
-          <div class="items">
-            <div class="item-header">
-              <span>Item</span>
-              <span>Price</span>
-              <span>Qty</span>
-              <span>Total</span>
-            </div>
-            ${processedBill.items && processedBill.items.length > 0 ? processedBill.items.map(item => {
-      const productName = item.productName || item.product_name || 'Unknown';
-      const productModel = item.productModel || item.product_model || '';
-      const sellPrice = parseFloat(item.sellPrice || item.sell_price || 0);
-      const quantity = item.quantity || 0;
-      const total = parseFloat(item.total || 0);
-
-      return `
-                <div class="item">
-                  <span>${productName} ${productModel ? `(${productModel})` : ''}</span>
-                  <span>₹${sellPrice.toFixed(2)}</span>
-                  <span>${quantity}</span>
-                  <span>₹${total.toFixed(2)}</span>
-                </div>
-              `;
-    }).join('') : '<div class="item"><span colspan="4">No items found</span></div>'}
-          </div>
-          
-          <div class="summary">
-            <div class="summary-row"><span>Subtotal:</span><span>₹${processedBill.subtotal.toFixed(2)}</span></div>
-            <div class="summary-row"><span>Discount:</span><span>${discountDisplay}</span></div>
-            <div class="summary-row"><span>Tax:</span><span>₹${processedBill.tax.toFixed(2)}</span></div>
-            <div class="summary-row total"><span>Total:</span><span>₹${processedBill.total.toFixed(2)}</span></div>
-            <div class="summary-row"><span>Paid:</span><span>₹${processedBill.paidAmount.toFixed(2)}</span></div>
-            <div class="summary-row"><span>Change:</span><span>₹${processedBill.changeAmount.toFixed(2)}</span></div>
-            <div class="summary-row"><span>Due:</span><span class="amount-due">₹${processedBill.dueAmount.toFixed(2)}</span></div>
-            <div class="summary-row"><span>Payment:</span><span>${(processedBill.paymentMethod || 'cash').toUpperCase()}</span></div>
-          </div>
-          
-          <div class="footer">
-            <p>Thank you for your purchase!</p>
-            <p>Goods once sold will not be taken back</p>
-            <p>** Computer generated bill **</p>
-            ${(processedBill.createdByName || processedBill.createdBy) ? `<p>Created by: ${processedBill.createdByName || processedBill.createdBy}</p>` : ''}
-          </div>
-          
+          ${printHTML.replace('</html>', '')}
           <script>
-            window.onload = function() { 
+            window.onload = function() {
               setTimeout(function() {
-                window.print(); 
-                window.close();
-              }, 200);
-            }
+                window.print();
+                setTimeout(function() {
+                  window.close();
+                }, 500);
+              }, 300);
+            };
           </script>
         </body>
       </html>
@@ -2271,7 +2497,7 @@ const VisitBillPage = () => {
               <thead>
                 <tr>
                   <th style={styles.modalTh}>Item</th>
-                  <th style={styles.modalTh}>Model</th>
+                  <th style={styles.modalTh}>Flavour</th>
                   <th style={styles.modalTh}>Price</th>
                   <th style={styles.modalTh}>Qty</th>
                   <th style={styles.modalTh}>Total</th>
@@ -2390,7 +2616,6 @@ const VisitBillPage = () => {
         </div>
       )}
 
-      {/* Add keyframe animation for spinner */}
       <style>
         {`
           @keyframes spin {
@@ -2404,3 +2629,4 @@ const VisitBillPage = () => {
 };
 
 export default VisitBillPage;
+

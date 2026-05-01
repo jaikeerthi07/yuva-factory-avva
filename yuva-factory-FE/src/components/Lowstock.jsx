@@ -193,7 +193,7 @@ export default function LowStockPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: item.name,
-            model: item.model || "",
+            Model: item.model || "",
             type: item.type || "",
             watts: item.watts || "",
             buyPrice: item.buyPrice || 0,
@@ -956,3 +956,4 @@ export default function LowStockPage() {
     </div>
   );
 }
+

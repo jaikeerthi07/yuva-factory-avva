@@ -3,7 +3,7 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { 
   Search, 
   Eye, 
@@ -67,7 +67,7 @@ const Warranty = () => {
   const [companies, setCompanies] = useState([]);
   const [showCompanySelector, setShowCompanySelector] = useState(false);
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = 'http://127.0.0.1:5000/api';
 
   // Create axios instance with credentials
   const api = axios.create({
@@ -330,7 +330,7 @@ const Warranty = () => {
         ];
       });
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 95,
@@ -1312,3 +1312,5 @@ const Warranty = () => {
 };
 
 export default Warranty;
+
+

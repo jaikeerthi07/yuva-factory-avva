@@ -32,7 +32,7 @@ const Sidebar = ({ isOpen }) => {
   const rawPermissions = user?.permissions || [];
   const userType = user?.user_type || "";
   const isAdmin =
-    userType?.toLowerCase() === "admin" || user?.email === "admin@m3cars.com";
+    userType?.toLowerCase() === "admin" || user?.email === "admin@yuvaasenterprise.com";
 
   const permissionMap = (() => {
     if (Array.isArray(rawPermissions)) {
@@ -438,3 +438,5 @@ const Sidebar = ({ isOpen }) => {
 
 
 export default Sidebar;
+
+
