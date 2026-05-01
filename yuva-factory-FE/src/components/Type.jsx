@@ -102,9 +102,12 @@ export default function ItemsByTypePage() {
 
   // ================= AUTO CALCULATION =================
   const calculateValues = (item) => {
-    // Safely parse values with defaults
-    const buy = parseFloat(item.buyPrice) || 0;
-    const sell = parseFloat(item.sellPrice) || 0;
+    // Safely parse values with defaults without overwriting raw strings
+    const buyRaw = item.buyPrice !== undefined ? item.buyPrice : item.buy_price;
+    const sellRaw = item.sellPrice !== undefined ? item.sellPrice : item.sell_price;
+    
+    const buy = parseFloat(buyRaw) || 0;
+    const sell = parseFloat(sellRaw) || 0;
     const qty = parseInt(item.quantity) || 0;
 
     const profitPercent = buy > 0 ? (((sell - buy) / buy) * 100).toFixed(2) : "0.00";
@@ -114,12 +117,15 @@ export default function ItemsByTypePage() {
       ...item,
       id: item.id, // Explicitly preserve ID
       name: item.name || '',
-      Model: item.model || '',
-      type: item.type || '',
-      watts: item.watts || '',
-      buyPrice: buy,
-      sellPrice: sell,
-      quantity: qty,
+      // Normalize model/flavour key for consistent UI display
+      model: item.model || item.Model || item.product_model || item.Flavour || '',
+      
+      // Normalize HSN key
+      watts: item.watts || item.hsn || item.hsn_code || item.HSN || '',
+      
+      // Normalize Type key
+      type: item.type || item.product_type || item.Type || '',
+      
       profitPercent, 
       amount,
     };
@@ -144,7 +150,10 @@ export default function ItemsByTypePage() {
   // ================= OPEN EDIT MODAL =================
   const handleEditItem = (item) => {
     if (!item) return;
-    setEditingItem({ ...item });
+    setEditingItem({ 
+      ...item,
+      model: item.model || item.Model || ""
+    });
     setShowEditModal(true);
   };
 
@@ -271,7 +280,7 @@ export default function ItemsByTypePage() {
 
       const exportData = dataToExport.map(item => ({
         'Name': item.name || '',
-        'Model': item.model || '',
+        'Flavour': item.model || '',
         'Type': item.type || '',
         'Watts': item.watts || '',
         'Buy Price': item.buyPrice || 0,
@@ -885,12 +894,12 @@ export default function ItemsByTypePage() {
           </div>
 
           <div style={styles.formGroup}>
-            <label style={styles.label}>Model</label>
+            <label style={styles.label}>Flavour</label>
             <input
               style={styles.input}
               value={editingItem.model || ''}
-              onChange={(e) => handleEditChange('Model', e.target.value)}
-              placeholder="Model"
+              onChange={(e) => handleEditChange('model', e.target.value)}
+              placeholder="Flavour"
             />
           </div>
 
@@ -905,12 +914,12 @@ export default function ItemsByTypePage() {
           </div>
 
           <div style={styles.formGroup}>
-            <label style={styles.label}>Hns</label>
+            <label style={styles.label}>HSN</label>
             <input
               style={styles.input}
               value={editingItem.watts || ''}
               onChange={(e) => handleEditChange('watts', e.target.value)}
-              placeholder="Watts"
+              placeholder="HSN Code"
             />
           </div>
 
@@ -1252,9 +1261,9 @@ export default function ItemsByTypePage() {
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    <th style={styles.th}>Product</th>
-                    <th style={styles.th}>Type</th>
-                    <th style={styles.th}>Hns</th>
+                    <th style={styles.th}>Product Name</th>
+                    <th style={styles.th}>Flavour</th>
+                    <th style={styles.th}>HSN</th>
                     <th style={styles.th}>Buy Price</th>
                     <th style={styles.th}>Sell Price</th>
                     <th style={styles.th}>Quantity</th>

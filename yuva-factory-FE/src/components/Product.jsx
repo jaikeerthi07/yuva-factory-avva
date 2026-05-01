@@ -1,7 +1,7 @@
 // ItemsPage.jsx
 import React, { useEffect, useState, useRef } from "react";
-import { 
-  Plus, Download, Upload, Trash2, Save, Search, RefreshCw, 
+import {
+  Plus, Download, Upload, Trash2, Save, Search, RefreshCw,
   X, CheckCircle, Clock, ChevronLeft, ChevronRight,
   Edit, Hash
 } from "lucide-react";
@@ -19,17 +19,17 @@ export default function ItemsPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  
+
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  
+
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
   const [importedItems, setImportedItems] = useState([]);
   const [processingImport, setProcessingImport] = useState(false);
   const [importStats, setImportStats] = useState({ added: 0, updated: 0, skipped: 0 });
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -74,10 +74,10 @@ export default function ItemsPage() {
     const initialCheck = setTimeout(() => {
       checkAndProcessPendingSupplies();
     }, 1000);
-    
+
     // Check every 30 seconds for new pending supplies
     const interval = setInterval(checkAndProcessPendingSupplies, 30000);
-    
+
     return () => {
       clearTimeout(initialCheck);
       clearInterval(interval);
@@ -93,9 +93,9 @@ export default function ItemsPage() {
     try {
       const res = await fetch(`${API_URL}?page=${page}&per_page=${itemsPerPage}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      
+
       const data = await res.json();
-      
+
       let productsArray = [];
       if (data && data.items && Array.isArray(data.items)) {
         productsArray = data.items;
@@ -116,12 +116,12 @@ export default function ItemsPage() {
         setTotalItems(0);
         setTotalPages(1);
       }
-      
+
       // Calculate amount for each product
-      const processedItems = productsArray.map(item => 
+      const processedItems = productsArray.map(item =>
         calculateAmount({ ...item, id: item.id })
       );
-      
+
       setItems(processedItems);
     } catch (err) {
       console.error("Error fetching products:", err);
@@ -142,20 +142,20 @@ export default function ItemsPage() {
     try {
       isProcessing.current = true;
       console.log("Checking for pending supply items...");
-      
+
       // Fetch all suppliers with their items
       const res = await fetch(`${SUPPLIER_API_URL}/suppliers-with-items`, {
         credentials: 'include'
       });
-      
+
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      
+
       const data = await res.json();
-      
+
       if (data.success && data.suppliers) {
         // Find all items with status "Pending" that haven't been processed yet
         const pendingItems = [];
-        
+
         data.suppliers.forEach(supplier => {
           if (supplier.items && supplier.items.length > 0) {
             supplier.items.forEach(item => {
@@ -171,7 +171,7 @@ export default function ItemsPage() {
             });
           }
         });
-        
+
         if (pendingItems.length > 0) {
           console.log(`Found ${pendingItems.length} new pending supply items, auto-processing...`);
           await processPendingSupplies(pendingItems);
@@ -192,7 +192,7 @@ export default function ItemsPage() {
       const allProductsRes = await fetch(`${API_URL}?page=1&per_page=1000`);
       const allProductsData = await allProductsRes.json();
       let allProducts = [];
-      
+
       if (allProductsData && allProductsData.items && Array.isArray(allProductsData.items)) {
         allProducts = allProductsData.items;
       }
@@ -210,7 +210,7 @@ export default function ItemsPage() {
           }
 
           // Check if product already exists in inventory
-          const existingItem = allProducts.find(item => 
+          const existingItem = allProducts.find(item =>
             isSameProduct(item, supplyItem)
           );
 
@@ -219,9 +219,9 @@ export default function ItemsPage() {
             const supplyQty = parseInt(supplyItem.quantity) || 1;
             const currentQty = parseInt(existingItem.quantity) || 0;
             const newQty = currentQty + supplyQty;
-            
+
             console.log(`Updating ${existingItem.name}: ${currentQty} + ${supplyQty} = ${newQty}`);
-            
+
             // Update in backend
             const updateRes = await fetch(`${API_URL}/${existingItem.id}`, {
               method: "PUT",
@@ -244,7 +244,7 @@ export default function ItemsPage() {
           } else {
             // Create new product
             const supplyQty = parseInt(supplyItem.quantity) || 1;
-            
+
             const newItem = {
               name: supplyItem.name,
               Model: supplyItem.model || "",
@@ -276,7 +276,7 @@ export default function ItemsPage() {
           if (successfullyProcessed.includes(supplyItem.id)) {
             // Mark as processed in our local set
             processedItemIds.current.add(supplyItem.id);
-            
+
             // Update the supply item status to "In Inventory"
             await updateSupplyItemStatus(supplyItem.id, "In Inventory");
           }
@@ -288,14 +288,14 @@ export default function ItemsPage() {
       if (addedCount > 0 || updatedCount > 0) {
         // Refresh products to get latest data
         await loadProducts(currentPage);
-        
-        showMessage("success", 
+
+        showMessage("success",
           `Auto-processed ${successfullyProcessed.length} supply item(s):\n` +
           `📦 ${addedCount} new product(s) added\n` +
           `📈 ${updatedCount} existing product(s) updated`
         );
       }
-      
+
     } catch (err) {
       console.error("Error processing pending supplies:", err);
     }
@@ -310,7 +310,7 @@ export default function ItemsPage() {
         credentials: 'include',
         body: JSON.stringify({ status: newStatus }),
       });
-      
+
       if (!response.ok) {
         console.error(`Failed to update status for item ${itemId}`);
       }
@@ -326,11 +326,11 @@ export default function ItemsPage() {
       const res = await fetch(`${BILLING_API_URL}/bills/pending-items`, {
         credentials: 'include'
       });
-      
+
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      
+
       const data = await res.json();
-      
+
       if (data.success && data.bills) {
         setPendingBills(data.bills);
       }
@@ -348,11 +348,11 @@ export default function ItemsPage() {
       const res = await fetch(`${BILLING_API_URL}/bills/${billId}/items/pending`, {
         credentials: 'include'
       });
-      
+
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      
+
       const data = await res.json();
-      
+
       if (data.success && data.items) {
         setBillItems(data.items);
       }
@@ -383,7 +383,7 @@ export default function ItemsPage() {
 
       if (data.success) {
         showMessage("success", "Item completed successfully!");
-        
+
         setBillItems(prevItems =>
           prevItems.map(item =>
             item.id === itemId ? { ...item, item_status: 'completed' } : item
@@ -391,13 +391,13 @@ export default function ItemsPage() {
         );
 
         await loadProducts(currentPage);
-        
+
         const updatedItems = billItems.map(item =>
           item.id === itemId ? { ...item, item_status: 'completed' } : item
         );
-        
+
         const allCompleted = updatedItems.every(item => item.item_status === 'completed');
-        
+
         if (allCompleted) {
           await loadPendingBills();
           setSelectedBill(null);
@@ -428,7 +428,7 @@ export default function ItemsPage() {
 
       if (data.success) {
         showMessage("success", `Successfully completed ${data.completedCount} items!`);
-        
+
         await loadProducts(currentPage);
         await loadPendingBills();
         setSelectedBill(null);
@@ -444,16 +444,29 @@ export default function ItemsPage() {
 
   // ================= CALCULATE AMOUNT =================
   const calculateAmount = (item) => {
-    const sell = parseFloat(item.sellPrice) || 0;
+    // Use raw values for calculation if available, otherwise fallback to API field names
+    const sellRaw = item.sellPrice !== undefined ? item.sellPrice : item.sell_price;
+    const buyRaw = item.buyPrice !== undefined ? item.buyPrice : item.buy_price;
+    
+    const sell = parseFloat(sellRaw) || 0;
+    const buy = parseFloat(buyRaw) || 0;
     const qty = parseInt(item.quantity) || 0;
     const amount = (sell * qty).toFixed(2);
 
-    return { 
-      ...item, 
+    return {
+      ...item,
+      // Normalize model/flavour key for consistent UI display
+      model: item.model || item.Model || item.product_model || item.Flavour || "",
+      
+      // Normalize HSN key - explicitly convert to string to preserve leading zeros
+      watts: (item.watts || item.hsn || item.hsn_code || item.HSN || "").toString(),
+      
+      // Normalize Type key
+      type: item.type || item.product_type || item.Type || "",
+      
       amount,
-      buyPrice: parseFloat(item.buyPrice) || 0,
-      sellPrice: sell,
-      quantity: qty
+      // We don't overwrite buyPrice/sellPrice/quantity here to avoid 
+      // interfering with the input field's raw string state (e.g. decimals)
     };
   };
 
@@ -461,10 +474,10 @@ export default function ItemsPage() {
   const isSameProduct = (a, b) => {
     const aBuyPrice = parseFloat(a.buyPrice || a.buy_price || 0);
     const bBuyPrice = parseFloat(b.buyPrice || b.buy_price || 0);
-    
+
     return (
       a.name?.toLowerCase() === b.name?.toLowerCase() &&
-      a.model?.toLowerCase() === (b.model || '').toLowerCase() &&
+      a.model?.toLowerCase() === (b.model || b.Model || '').toLowerCase() &&
       a.type?.toLowerCase() === (b.type || '').toLowerCase() &&
       parseFloat(a.watts || 0) === parseFloat(b.watts || 0) &&
       aBuyPrice === bBuyPrice
@@ -473,7 +486,10 @@ export default function ItemsPage() {
 
   // ================= EDIT ITEM FUNCTIONS =================
   const handleEditClick = (item) => {
-    setEditingItem({ ...item });
+    setEditingItem({ 
+      ...item,
+      model: item.model || item.Model || ""
+    });
     setShowEditModal(true);
   };
 
@@ -495,12 +511,23 @@ export default function ItemsPage() {
 
     setSaving(true);
     try {
-      // Prepare the data for API - ensure all fields are properly formatted
+      // Prepare the data for API - send multiple variations to be safe with backend schema
+      const val_model = (editingItem.model || editingItem.Model || "").toString().trim();
+      const val_hsn = (editingItem.watts || "").toString().trim();
+      const val_type = (editingItem.type || "").toString().trim();
+      const val_name = (editingItem.name || "").toString().trim();
+
       const productData = {
-        name: editingItem.name.trim(),
-        Model: editingItem.model?.trim() || "",
-        type: editingItem.type?.trim() || "",
-        watts: editingItem.watts?.toString() || "", // Keep as watts in API
+        name: val_name,
+        // Send both casings for flavour/model
+        Model: val_model,
+        model: val_model,
+        // Send both for HSN/watts
+        watts: val_hsn,
+        hsn: val_hsn,
+        // Send both for Type
+        type: val_type,
+        Type: val_type,
         buyPrice: parseFloat(editingItem.buyPrice) || 0,
         sellPrice: parseFloat(editingItem.sellPrice) || 0,
         quantity: parseInt(editingItem.quantity) || 0,
@@ -537,10 +564,10 @@ export default function ItemsPage() {
       showMessage("success", `Item ${editingItem.isNew ? 'created' : 'updated'} successfully!`);
       setShowEditModal(false);
       setEditingItem(null);
-      
+
       // Reload products to show the new/updated item
       await loadProducts(currentPage);
-      
+
     } catch (err) {
       console.error("Save error:", err);
       showMessage("error", `Failed to save item: ${err.message}`);
@@ -555,15 +582,15 @@ export default function ItemsPage() {
     const newItem = calculateAmount({
       id: `new-${Date.now()}`,
       name: "",
-      Model: "",
+      model: "",
       type: "",
-      watts: "", // This will be displayed as Warranty
+      watts: "", // This will be displayed as HSN
       buyPrice: "",
       sellPrice: "",
       quantity: "",
       isNew: true,
     });
-    
+
     console.log('Creating new item:', newItem);
     setEditingItem(newItem);
     setShowEditModal(true);
@@ -585,7 +612,7 @@ export default function ItemsPage() {
         const res = await fetch(`${API_URL}/${id}`, {
           method: "DELETE",
         });
-        
+
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.error || "Failed to delete product");
@@ -594,7 +621,7 @@ export default function ItemsPage() {
 
       showMessage("success", "Item deleted successfully");
       await loadProducts(currentPage);
-      
+
     } catch (err) {
       console.error("Delete error:", err);
       showMessage("error", `Failed to delete item: ${err.message}`);
@@ -606,7 +633,7 @@ export default function ItemsPage() {
     try {
       const res = await fetch(`${API_URL}?page=1&per_page=1000`);
       const data = await res.json();
-      
+
       let productsArray = [];
       if (data && data.items && Array.isArray(data.items)) {
         productsArray = data.items;
@@ -617,7 +644,7 @@ export default function ItemsPage() {
       const exportData = productsArray.map(item => ({
         'ID': item.id || '',
         'Name': item.name || '',
-        'Model': item.model || '',
+        'Flavour': item.model || '',
         'Type': item.type || '',
         'Warranty': item.watts || '', // Changed from 'Watts' to 'Warranty'
         'Buy Price': item.buyPrice || 0,
@@ -654,7 +681,7 @@ export default function ItemsPage() {
 
       const date = new Date().toISOString().split('T')[0];
       saveAs(file, `Products_${date}.xlsx`);
-      
+
       showMessage("success", "Export successful!");
     } catch (err) {
       console.error("Export error:", err);
@@ -716,7 +743,7 @@ export default function ItemsPage() {
         setImportedItems(processedItems);
         setShowImportModal(true);
         setImportStats({ added: 0, updated: 0, skipped: 0 });
-        
+
         e.target.value = '';
       } catch (err) {
         console.error("Import error:", err);
@@ -730,20 +757,20 @@ export default function ItemsPage() {
   // ================= PROCESS IMPORTED ITEMS =================
   const processImportedItems = async () => {
     const itemsToProcess = importedItems.filter(item => item.selected);
-    
+
     if (itemsToProcess.length === 0) {
       showMessage("error", "No items selected for import");
       return;
     }
 
     setProcessingImport(true);
-    
+
     try {
       // Fetch all existing products to check for duplicates
       const allProductsRes = await fetch(`${API_URL}?page=1&per_page=1000`);
       const allProductsData = await allProductsRes.json();
       let existingProducts = [];
-      
+
       if (allProductsData && allProductsData.items && Array.isArray(allProductsData.items)) {
         existingProducts = allProductsData.items;
       }
@@ -755,7 +782,7 @@ export default function ItemsPage() {
       for (const importItem of itemsToProcess) {
         try {
           // Check if product already exists
-          const existingItem = existingProducts.find(item => 
+          const existingItem = existingProducts.find(item =>
             isSameProduct(item, importItem)
           );
 
@@ -763,14 +790,14 @@ export default function ItemsPage() {
             // Check if sell price is 0 or same as existing
             const importSellPrice = parseFloat(importItem.sellPrice) || 0;
             const existingSellPrice = parseFloat(existingItem.sellPrice) || 0;
-            
+
             // If sell price is 0 or matches existing, just add quantity
             if (importSellPrice === 0 || Math.abs(importSellPrice - existingSellPrice) < 0.01) {
               // Update quantity only
               const importQty = parseInt(importItem.quantity) || 0;
               const currentQty = parseInt(existingItem.quantity) || 0;
               const newQty = currentQty + importQty;
-              
+
               const updateRes = await fetch(`${API_URL}/${existingItem.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -793,10 +820,10 @@ export default function ItemsPage() {
             } else {
               // Different sell price - create as new item
               const newItem = {
-                name: importItem.name,
-                Model: importItem.model || "",
-                type: importItem.type || "",
-                watts: importItem.watts || "",
+                name: (importItem.name || "").toString().trim(),
+                Model: (importItem.model || importItem.Model || "").toString().trim(),
+                type: (importItem.type || "").toString().trim(),
+                watts: (importItem.watts || "").toString().trim(),
                 buyPrice: parseFloat(importItem.buyPrice) || 0,
                 sellPrice: importSellPrice,
                 quantity: parseInt(importItem.quantity) || 0,
@@ -817,10 +844,10 @@ export default function ItemsPage() {
           } else {
             // Create new product
             const newItem = {
-              name: importItem.name,
-              Model: importItem.model || "",
-              type: importItem.type || "",
-              watts: importItem.watts || "",
+              name: (importItem.name || "").toString().trim(),
+              Model: (importItem.model || importItem.Model || "").toString().trim(),
+              type: (importItem.type || "").toString().trim(),
+              watts: (importItem.watts || "").toString().trim(),
               buyPrice: parseFloat(importItem.buyPrice) || 0,
               sellPrice: parseFloat(importItem.sellPrice) || 0,
               quantity: parseInt(importItem.quantity) || 0,
@@ -845,23 +872,23 @@ export default function ItemsPage() {
       }
 
       setImportStats({ added, updated, skipped });
-      
+
       // Refresh products
       await loadProducts(currentPage);
-      
-      showMessage("success", 
+
+      showMessage("success",
         `Import completed!\n` +
         `✅ ${added} new items added\n` +
         `📈 ${updated} existing items updated\n` +
         `⏭️ ${skipped} items skipped`
       );
-      
+
       // Close modal after 3 seconds
       setTimeout(() => {
         setShowImportModal(false);
         setImportedItems([]);
       }, 3000);
-      
+
     } catch (err) {
       console.error("Import processing error:", err);
       showMessage("error", "Failed to process import: " + err.message);
@@ -872,8 +899,8 @@ export default function ItemsPage() {
 
   // ================= TOGGLE IMPORT ITEM SELECTION =================
   const toggleImportItem = (index) => {
-    setImportedItems(prev => 
-      prev.map((item, i) => 
+    setImportedItems(prev =>
+      prev.map((item, i) =>
         i === index ? { ...item, selected: !item.selected } : item
       )
     );
@@ -882,7 +909,7 @@ export default function ItemsPage() {
   // ================= TOGGLE ALL IMPORT ITEMS =================
   const toggleAllImportItems = () => {
     const allSelected = importedItems.every(item => item.selected);
-    setImportedItems(prev => 
+    setImportedItems(prev =>
       prev.map(item => ({ ...item, selected: !allSelected }))
     );
   };
@@ -894,6 +921,7 @@ export default function ItemsPage() {
         (item) =>
           item.name?.toLowerCase().includes(search.toLowerCase()) ||
           item.model?.toLowerCase().includes(search.toLowerCase()) ||
+          item.Model?.toLowerCase().includes(search.toLowerCase()) ||
           item.type?.toLowerCase().includes(search.toLowerCase()) ||
           String(item.id).includes(search)
       );
@@ -1336,7 +1364,7 @@ export default function ItemsPage() {
                 <Edit size={20} style={{ marginRight: '8px', display: 'inline' }} />
                 {editingItem.isNew ? 'Add New Item' : 'Edit Item'}
               </h2>
-              <button 
+              <button
                 style={modalStyles.closeButton}
                 onClick={() => {
                   setShowEditModal(false);
@@ -1358,11 +1386,11 @@ export default function ItemsPage() {
             </div>
 
             <div style={modalStyles.formGroup}>
-              <label style={modalStyles.label}>Model</label>
+              <label style={modalStyles.label}>Flavour</label>
               <input
                 style={modalStyles.input}
                 value={editingItem.model || ""}
-                onChange={(e) => handleEditChange("Model", e.target.value)}
+                onChange={(e) => handleEditChange("model", e.target.value)}
                 placeholder="Enter flavour"
               />
             </div>
@@ -1423,8 +1451,8 @@ export default function ItemsPage() {
             </div>
 
             <div style={modalStyles.modalFooter}>
-              <button 
-                style={{...styles.button}}
+              <button
+                style={{ ...styles.button }}
                 onClick={() => {
                   setShowEditModal(false);
                   setEditingItem(null);
@@ -1432,8 +1460,8 @@ export default function ItemsPage() {
               >
                 Cancel
               </button>
-              <button 
-                style={{...styles.button, ...styles.primaryButton}}
+              <button
+                style={{ ...styles.button, ...styles.primaryButton }}
                 onClick={handleEditSave}
                 disabled={saving}
               >
@@ -1453,7 +1481,7 @@ export default function ItemsPage() {
                 <Upload size={20} style={{ marginRight: '8px', display: 'inline' }} />
                 Import Items ({importedItems.length} found)
               </h2>
-              <button 
+              <button
                 style={modalStyles.closeButton}
                 onClick={() => {
                   setShowImportModal(false);
@@ -1466,15 +1494,15 @@ export default function ItemsPage() {
 
             {importStats.added > 0 || importStats.updated > 0 || importStats.skipped > 0 ? (
               <div style={modalStyles.statsContainer}>
-                <div style={{...modalStyles.statBox, ...modalStyles.statAdded}}>
+                <div style={{ ...modalStyles.statBox, ...modalStyles.statAdded }}>
                   <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{importStats.added}</div>
                   <div style={{ fontSize: '12px' }}>Added</div>
                 </div>
-                <div style={{...modalStyles.statBox, ...modalStyles.statUpdated}}>
+                <div style={{ ...modalStyles.statBox, ...modalStyles.statUpdated }}>
                   <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{importStats.updated}</div>
                   <div style={{ fontSize: '12px' }}>Updated</div>
                 </div>
-                <div style={{...modalStyles.statBox, ...modalStyles.statSkipped}}>
+                <div style={{ ...modalStyles.statBox, ...modalStyles.statSkipped }}>
                   <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{importStats.skipped}</div>
                   <div style={{ fontSize: '12px' }}>Skipped</div>
                 </div>
@@ -1482,7 +1510,7 @@ export default function ItemsPage() {
             ) : (
               <>
                 <p style={{ color: '#9ca3af', marginBottom: '15px' }}>
-                  Select the items you want to import. Items with the same name, model, type, watts, and buy price will be updated (quantity added).
+                  Select the items you want to import. Items with the same name, flavour, type, HSN, and buy price will be updated (quantity added).
                   Items with different sell prices will be created as new items.
                 </p>
 
@@ -1499,7 +1527,7 @@ export default function ItemsPage() {
                           />
                         </th>
                         <th style={modalStyles.importTh}>Name</th>
-                        <th style={modalStyles.importTh}>Model</th>
+                        <th style={modalStyles.importTh}>Flavour</th>
                         <th style={modalStyles.importTh}>Type</th>
                         <th style={modalStyles.importTh}>Hsn</th>
                         <th style={modalStyles.importTh}>Sell Price</th>
@@ -1530,8 +1558,8 @@ export default function ItemsPage() {
                 </div>
 
                 <div style={modalStyles.modalFooter}>
-                  <button 
-                    style={{...styles.button}}
+                  <button
+                    style={{ ...styles.button }}
                     onClick={() => {
                       setShowImportModal(false);
                       setImportedItems([]);
@@ -1539,8 +1567,8 @@ export default function ItemsPage() {
                   >
                     Cancel
                   </button>
-                  <button 
-                    style={{...styles.button, ...styles.primaryButton}}
+                  <button
+                    style={{ ...styles.button, ...styles.primaryButton }}
                     onClick={processImportedItems}
                     disabled={processingImport}
                   >
@@ -1556,13 +1584,13 @@ export default function ItemsPage() {
       {/* Pending Bills Modal */}
       {showPendingBillsModal && (
         <div style={modalStyles.overlay}>
-          <div style={{...modalStyles.content, maxWidth: '1000px'}}>
+          <div style={{ ...modalStyles.content, maxWidth: '1000px' }}>
             <div style={modalStyles.modalHeader}>
               <h2 style={modalStyles.modalTitle}>
                 <Clock size={20} style={{ marginRight: '8px', display: 'inline' }} />
                 Pending Bills & Items
               </h2>
-              <button 
+              <button
                 style={modalStyles.closeButton}
                 onClick={() => {
                   setShowPendingBillsModal(false);
@@ -1636,7 +1664,7 @@ export default function ItemsPage() {
                         <thead>
                           <tr>
                             <th style={{ backgroundColor: '#374151', padding: '10px', textAlign: 'left', color: '#f3f4f6' }}>Product</th>
-                            <th style={{ backgroundColor: '#374151', padding: '10px', textAlign: 'left', color: '#f3f4f6' }}>Model</th>
+                            <th style={{ backgroundColor: '#374151', padding: '10px', textAlign: 'left', color: '#f3f4f6' }}>Flavour</th>
                             <th style={{ backgroundColor: '#374151', padding: '10px', textAlign: 'left', color: '#f3f4f6' }}>Quantity</th>
                             <th style={{ backgroundColor: '#374151', padding: '10px', textAlign: 'left', color: '#f3f4f6' }}>Price</th>
                             <th style={{ backgroundColor: '#374151', padding: '10px', textAlign: 'left', color: '#f3f4f6' }}>Total</th>
@@ -1693,7 +1721,7 @@ export default function ItemsPage() {
       <div style={styles.header}>
         <div style={styles.headerTitle}>
           <h1 style={styles.title}>📦 Products Inventory</h1>
-          <button 
+          <button
             style={styles.refreshButton}
             onClick={handleRefresh}
             title="Refresh"
@@ -1709,9 +1737,9 @@ export default function ItemsPage() {
 
           <label style={styles.button}>
             <Upload size={16} /> Import
-            <input 
-              type="file" 
-              hidden 
+            <input
+              type="file"
+              hidden
               onChange={handleImport}
               accept=".xlsx,.xls,.csv"
             />
@@ -1737,9 +1765,9 @@ export default function ItemsPage() {
       {message.text && (
         <div style={{
           ...styles.message,
-          ...(message.type === "success" ? styles.successMessage : 
-             message.type === "error" ? styles.errorMessage : 
-             styles.infoMessage)
+          ...(message.type === "success" ? styles.successMessage :
+            message.type === "error" ? styles.errorMessage :
+              styles.infoMessage)
         }}>
           {message.text.split('\n').map((line, i) => (
             <div key={i}>{line}</div>
@@ -1752,7 +1780,7 @@ export default function ItemsPage() {
           <Search size={16} style={styles.searchIcon} />
           <input
             type="text"
-            placeholder="Search by ID, name, model, type..."
+            placeholder="Search by ID, name, flavour, type..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={styles.searchInput}
@@ -1774,11 +1802,11 @@ export default function ItemsPage() {
                   <Hash size={14} style={{ marginRight: '4px', display: 'inline' }} />
                   ID
                 </th>
-                <th style={styles.th}>Name</th>
-                <th style={styles.th}>Model</th>
+                <th style={styles.th}>Product Name</th>
+                <th style={styles.th}>Flavour</th>
                 <th style={styles.th}>Quantity</th>
                 <th style={styles.th}>Sell Price (₹)</th>
-                <th style={styles.th}>Hsn</th>
+                <th style={styles.th}>HSN</th>
                 <th style={styles.th}>Type</th>
                 <th style={styles.th}>Actions</th>
               </tr>
@@ -1798,21 +1826,21 @@ export default function ItemsPage() {
                       <span style={{ fontFamily: 'monospace', color: '#9ca3af' }}>
                         #{item.id}
                       </span>
-                      {item.isNew && <span style={{...styles.badge, ...styles.newBadge}}>NEW</span>}
+                      {item.isNew && <span style={{ ...styles.badge, ...styles.newBadge }}>NEW</span>}
                     </td>
-                    
+
                     <td style={styles.td}>{item.name || '-'}</td>
-                    
-                    <td style={styles.td}>{item.model || '-'}</td>
-                    
+
+                    <td style={styles.td}>{item.model || item.Model || item.product_model || item.Flavour || '-'}</td>
+
                     <td style={styles.td}>{item.quantity || 0}</td>
-                    
+
                     <td style={styles.td}>₹{item.sellPrice?.toFixed(2) || '0.00'}</td>
-                    
-                    <td style={styles.td}>{item.watts || '-'}</td>
-                    
+
+                    <td style={styles.td}>{item.watts || item.hsn || item.HSN || '-'}</td>
+
                     <td style={styles.td}>{item.type || '-'}</td>
-                    
+
                     <td style={styles.td}>
                       <div style={styles.actionButtons}>
                         <button
@@ -1845,7 +1873,7 @@ export default function ItemsPage() {
           <div style={paginationStyles.info}>
             Showing page {currentPage} of {totalPages} | Total items: {totalItems}
           </div>
-          
+
           <div style={paginationStyles.controls}>
             <button
               onClick={goToPreviousPage}
@@ -1857,7 +1885,7 @@ export default function ItemsPage() {
             >
               <ChevronLeft size={16} />
             </button>
-            
+
             <div style={paginationStyles.pageNumbers}>
               {[...Array(totalPages)].map((_, index) => {
                 const pageNumber = index + 1;
@@ -1887,7 +1915,7 @@ export default function ItemsPage() {
                 return null;
               })}
             </div>
-            
+
             <button
               onClick={goToNextPage}
               disabled={currentPage === totalPages}

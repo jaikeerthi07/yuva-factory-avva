@@ -490,7 +490,7 @@ const Dashboard = () => {
             <thead>
               <tr>
                 <th style={styles.th}>Product</th>
-                <th style={styles.th}>Model</th>
+                <th style={styles.th}>Flavour</th>
                 <th style={styles.th}>Stock</th>
                 <th style={styles.th}>Status</th>
               </tr>

@@ -703,7 +703,7 @@ export default function LowStockPage() {
                   <tr>
                     <th style={styles.modalTh}>ID</th>
                     <th style={styles.modalTh}>Product</th>
-                    <th style={styles.modalTh}>Model</th>
+                    <th style={styles.modalTh}>Flavour</th>
                     <th style={styles.modalTh}>Current Stock</th>
                     <th style={styles.modalTh}>Status</th>
                     <th style={styles.modalTh}>Required</th>
@@ -829,7 +829,7 @@ export default function LowStockPage() {
         <Search size={18} style={styles.searchIcon} />
         <input
           type="text"
-          placeholder="Search by ID, name, model, or type..."
+          placeholder="Search by ID, name, flavour, or type..."
           style={styles.searchInput}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -865,7 +865,7 @@ export default function LowStockPage() {
               <tr>
                 <th style={styles.th}>ID</th>
                 <th style={styles.th}>Name</th>
-                <th style={styles.th}>Model</th>
+                <th style={styles.th}>Flavour</th>
                 <th style={styles.th}>Type</th>
                 <th style={styles.th}>Warrenty</th>
                 <th style={styles.th}>Current Stock</th>

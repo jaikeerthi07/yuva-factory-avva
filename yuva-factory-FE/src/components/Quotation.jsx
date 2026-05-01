@@ -1409,7 +1409,7 @@ const QuotationPage = () => {
                     <div style={styles.searchContainer}>
                       <input
                         style={styles.searchInput}
-                        placeholder="Search product by name, model or SKU... (min 2 characters)"
+                        placeholder="Search product by name, flavour or SKU... (min 2 characters)"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                       />

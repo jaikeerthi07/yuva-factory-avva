@@ -1832,18 +1832,27 @@ const Bill = () => {
         vehicleName: vehicleName,
         vehicleNumber: vehicleNumber,
         companyId: selectedCompany?.id,
-        discount: discount,
-        discountType: discountType === 'percentage' ? 'percentage' : 'amount',
-        tax: tax,
-        taxType: taxType === 'percentage' ? 'percentage' : 'amount',
-        paidAmount: paidAmount,
-        paymentMethod: paymentMethod,
         createdBy: JSON.parse(localStorage.getItem('user'))?.id,
         createdByName: createdBy,
+        // Send pre-calculated totals and metadata to avoid backend recalculation errors
+        subtotal: calculateSubtotal(),
+        discountAmount: calculateDiscountAmount(),
+        taxAmount: calculateTaxAmount(),
+        total: calculateTotal(),
+        grandTotal: calculateTotal(), // Some backends use grandTotal
+        totalAmount: calculateTotal(), // Some backends use totalAmount
+        itemCount: activeProducts.reduce((sum, p) => sum + (parseInt(p.quantity) || 0), 0),
+        billType: billType, // 'inclusive-tax' or 'exclusive-tax'
+        paidAmount: paidAmount,
+        paymentMethod: paymentMethod,
         items: activeProducts.map(p => ({
           productId: p.id,
           productSource: p.source || 'product',
-          quantity: p.quantity
+          productName: p.name,
+          productModel: p.model || p.Flavour || '',
+          quantity: p.quantity,
+          sellPrice: p.sellPrice,
+          total: p.total
         }))
       };
 

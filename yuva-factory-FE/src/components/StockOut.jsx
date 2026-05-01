@@ -181,7 +181,7 @@ const BillItemsPage = () => {
         'ID': item.id || '',
         'Date': item.billDate ? new Date(item.billDate).toLocaleDateString() : '',
         'Product Name': item.product_name || '',
-        'Model': item.product_model || '',
+        'Flavour': item.product_model || '',
         'Type': item.product_type || '',
         'Price (₹)': item.sell_price || 0,
         'Quantity': item.quantity || 0,
@@ -237,7 +237,7 @@ const BillItemsPage = () => {
       doc.text(`Total Items: ${filteredItems.length}`, 14, 40);
       
       const tableColumn = [
-        'ID', 'Date', 'Product', 'Model', 'Type', 'Price', 'Qty', 'Total'
+        'ID', 'Date', 'Product', 'Flavour', 'Type', 'Price', 'Qty', 'Total'
       ];
       
       const tableRows = filteredItems.map(item => [
@@ -681,7 +681,7 @@ const BillItemsPage = () => {
           <input
             type="text"
             style={styles.searchInput}
-            placeholder="Search by ID, product, model, or type..."
+            placeholder="Search by ID, product, flavour, or type..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -705,7 +705,7 @@ const BillItemsPage = () => {
               <th style={styles.th}>ID</th>
               <th style={styles.th}>Date</th>
               <th style={styles.th}>Product</th>
-              <th style={styles.th}>Model</th>
+              <th style={styles.th}>Flavour</th>
               <th style={styles.th}>Type</th>
               <th style={styles.th}>Price</th>
               <th style={styles.th}>Qty</th>
@@ -852,7 +852,7 @@ const BillItemsPage = () => {
               
               {selectedItem.product_model && (
                 <>
-                  <div style={styles.modalLabel}>Model</div>
+                  <div style={styles.modalLabel}>Flavour</div>
                   <div style={styles.modalValue}>{selectedItem.product_model}</div>
                 </>
               )}

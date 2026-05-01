@@ -774,7 +774,7 @@ const PaymentTracking = () => {
                 <thead>
                   <tr>
                     <th style={styles.th}>Item Name</th>
-                    <th style={styles.th}>Model</th>
+                    <th style={styles.th}>Flavour</th>
                     <th style={styles.th}>Type</th>
                     <th style={styles.th}>Quantity</th>
                     <th style={styles.th}>Unit Price</th>

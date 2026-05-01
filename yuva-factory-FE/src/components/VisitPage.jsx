@@ -752,10 +752,13 @@ const VisitBillPage = () => {
           discountValue: discountValue,
           discountAmount: discountAmount,
           discountType: discountType,
-          tax: parseFloat(bill.tax || bill.taxAmount || bill.tax_amount || 0),
+          // Prioritize tax amount over tax rate
+          tax: parseFloat(bill.taxAmount || bill.tax_amount || bill.tax || 0),
           taxType: bill.taxType || bill.tax_type || 'percentage',
-          total: parseFloat(bill.total || bill.grandTotal || bill.grand_total || bill.amount || bill.totalAmount || 0),
+          // Prioritize total amount fields
+          total: parseFloat(bill.totalAmount || bill.grandTotal || bill.grand_total || bill.total || bill.amount || 0),
           paidAmount: parseFloat(bill.paidAmount || bill.paid_amount || bill.paid || 0),
+          itemCount: parseInt(bill.itemCount || bill.item_count || bill.items_count || 0),
           changeAmount: parseFloat(bill.changeAmount || bill.change_amount || bill.change || 0),
           paymentMethod: bill.paymentMethod || bill.payment_method || bill.payment?.method || 'cash',
           createdAt: bill.createdAt || bill.created_at || bill.date || new Date().toISOString(),
@@ -792,8 +795,11 @@ const VisitBillPage = () => {
 
       // Calculate item count and due amount for each bill
       processedBills.forEach(bill => {
-        bill.itemCount = bill.items ? bill.items.length : 0;
-        bill.dueAmount = bill.total - bill.paidAmount;
+        // If itemCount is missing or 0 but we have items, sum the quantities
+        if ((!bill.itemCount || bill.itemCount === 0) && bill.items && bill.items.length > 0) {
+          bill.itemCount = bill.items.reduce((sum, item) => sum + (parseInt(item.quantity || item.qty || 0)), 0);
+        }
+        bill.dueAmount = (bill.total || 0) - (bill.paidAmount || 0);
       });
 
       // Filter to show only bills with bill numbers starting with "BT"
@@ -2507,7 +2513,8 @@ const VisitBillPage = () => {
                 {selectedBill.items && selectedBill.items.length > 0 ? (
                   selectedBill.items.map((item, index) => {
                     const productName = item.productName || item.product_name || 'Unknown';
-                    const productModel = item.productModel || item.product_model || '';
+                    // Use robust normalization for Flavour
+                    const productModel = item.productFlavour || item.product_flavour || item.productModel || item.product_model || item.model || item.Model || item.flavour || '';
                     const sellPrice = parseFloat(item.sellPrice || item.sell_price || 0);
                     const quantity = item.quantity || 0;
                     const total = parseFloat(item.total || 0);

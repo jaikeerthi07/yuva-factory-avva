@@ -308,7 +308,7 @@ const Warranty = () => {
       
       // Products table
       const tableColumn = [
-        '#', 'Product', 'Model', 'Warranty Period', 'Start Date', 'End Date', 'Status', 'Days Left'
+        '#', 'Product', 'Flavour', 'Warranty Period', 'Start Date', 'End Date', 'Status', 'Days Left'
       ];
       
       const tableRows = warrantyData.items.map((item, index) => {
@@ -362,7 +362,7 @@ const Warranty = () => {
         return {
           'S.No': index + 1,
           'Product Name': item.productName,
-          'Product Model': item.productModel || 'N/A',
+          'Product Flavour': item.productModel || 'N/A',
           'Quantity': item.quantity,
           'Price': item.sellPrice,
           'Total': item.total,
@@ -574,7 +574,7 @@ const Warranty = () => {
               <tr>
                 <th>#</th>
                 <th>Product Name</th>
-                <th>Model</th>
+                <th>Flavour</th>
                 <th>Warranty Period</th>
                 <th>Warranty Start</th>
                 <th>Warranty End</th>
@@ -1118,7 +1118,7 @@ const Warranty = () => {
                   <tr>
                     <th style={styles.th}>#</th>
                     <th style={styles.th}>Product Name</th>
-                    <th style={styles.th}>Model</th>
+                    <th style={styles.th}>Flavour</th>
                     <th style={styles.th}>Qty</th>
                     <th style={styles.th}>Price</th>
                     <th style={styles.th}>Warranty Period</th>
@@ -1242,7 +1242,7 @@ const Warranty = () => {
             </div>
             
             <div style={{ marginBottom: '15px' }}>
-              <p style={{ color: '#9ca3af', marginBottom: '5px' }}>Model</p>
+              <p style={{ color: '#9ca3af', marginBottom: '5px' }}>Flavour</p>
               <p style={{ color: '#f9fafb' }}>{selectedProduct.productModel || 'N/A'}</p>
             </div>
             
