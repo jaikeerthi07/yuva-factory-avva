@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # ==================== Supplier Payment Tracking Routes ====================
 
-@payment_tracking_bp.route('/suppliers-with-items', methods=['GET'])
+@payment_tracking_bp.route('/suppliers-payment-data', methods=['GET'])
 def get_suppliers_with_items():
     """Get all suppliers with their items and payment information"""
     try:
@@ -177,23 +177,36 @@ def create_payment(supplier_id):
         }), 500
 
 
-@payment_tracking_bp.route('/payments/<int:payment_id>', methods=['DELETE'])
+@payment_tracking_bp.route('/supplier-payments/<int:payment_id>', methods=['DELETE'])
 def delete_payment(payment_id):
     """Delete a payment record"""
     try:
-        payment = SupplierPayment.query.get(payment_id)
+        # Use filter_by instead of get for more robust lookup in some environments
+        payment = SupplierPayment.query.filter_by(id=payment_id).first()
+        
+        if not payment:
+            # Fallback to get just in case
+            payment = SupplierPayment.query.get(payment_id)
+            
         if not payment:
             return jsonify({
                 'success': False,
-                'error': 'Payment record not found'
+                'error': f'Payment record not found (ID: {payment_id}). Please refresh the page.'
             }), 404
         
-        # Store supplier_id for logging
-        supplier_id = payment.supplier_id
-        amount = payment.amount
-        
-        db.session.delete(payment)
-        db.session.commit()
+        try:
+            # Store data for logging
+            supplier_id = payment.supplier_id
+            amount = payment.amount
+            
+            db.session.delete(payment)
+            db.session.commit()
+            print(f"✅ Successfully deleted payment {payment_id}")
+        except Exception as delete_error:
+            db.session.rollback()
+            print(f"❌ Standard delete failed, trying direct SQL for payment {payment_id}")
+            db.session.execute(text("DELETE FROM supplier_payments WHERE id = :id"), {"id": payment_id})
+            db.session.commit()
         
         logger.info(f"Payment of {amount} deleted for supplier {supplier_id}")
         

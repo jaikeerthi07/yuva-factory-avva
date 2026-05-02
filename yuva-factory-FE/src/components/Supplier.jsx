@@ -66,7 +66,7 @@ const SupplierPage = () => {
   const [searchField, setSearchField] = useState('all');
 
   // Base URL for API
-  const BASE_URL = 'http://127.0.0.1:5000';
+  const BASE_URL = 'http://localhost:5000';
 
   // Check authentication status on mount
   useEffect(() => {
@@ -106,7 +106,7 @@ const SupplierPage = () => {
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${BASE_URL}/api/suppliers-with-items`, {
+      const response = await fetch(`${BASE_URL}/api/suppliers-mgmt-data`, {
         credentials: 'include',
         mode: 'cors',
         headers: {
@@ -322,8 +322,8 @@ const SupplierPage = () => {
         const itemData = {
           name: currentItem.name,
           type: currentItem.type || null,
-          model: modelValue,
-          watts: parseFloat(currentItem.watts) || 0,
+          model: currentItem.model || '', // Fixed: Use currentItem.model for flavour
+          watts: parseFloat(currentItem.watts) || 0, // HSN is stored in watts
           buy_price: parseFloat(currentItem.buyPrice) || 0,
           quantity: parseInt(currentItem.quantity) || 0,
           status: "Pending",
@@ -1386,9 +1386,10 @@ const SupplierPage = () => {
             <thead>
               <tr>
                 <th style={styles.th}>Item Name</th>
+                <th style={styles.th}>Flavour</th>
                 <th style={styles.th}>Type</th>
                 <th style={styles.th}>HSN</th>
-                <th style={styles.th}>Buy Price (₹)</th>
+                <th style={styles.th}>Price (₹)</th>
                 <th style={styles.th}>Quantity</th>
                 <th style={styles.th}>Attachment</th>
                 <th style={styles.th}>Actions</th>
@@ -1411,6 +1412,11 @@ const SupplierPage = () => {
                           Pending
                         </span>
                       )}
+                    </td>
+                    <td style={styles.td}>
+                      <span style={{ background: '#334155', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                        {item.model || '—'}
+                      </span>
                     </td>
                     <td style={styles.td}>
                       <span style={{ background: '#334155', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
@@ -1491,9 +1497,10 @@ const SupplierPage = () => {
                 <thead>
                   <tr>
                     <th style={styles.th}>Item Name</th>
+                    <th style={styles.th}>Flavour</th>
                     <th style={styles.th}>Type</th>
                     <th style={styles.th}>HSN</th>
-                    <th style={styles.th}>Buy Price (₹)</th>
+                    <th style={styles.th}>Price (₹)</th>
                     <th style={styles.th}>Quantity</th>
                     <th style={styles.th}>Attachment</th>
                   </tr>
@@ -1508,6 +1515,11 @@ const SupplierPage = () => {
                             Pending
                           </span>
                         )}
+                      </td>
+                      <td style={styles.td}>
+                        <span style={{ background: '#334155', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                          {item.model || '—'}
+                        </span>
                       </td>
                       <td style={styles.td}>
                         <span style={{ background: '#334155', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
@@ -1749,6 +1761,19 @@ const SupplierPage = () => {
               </div>
 
               <div style={styles.formGroup}>
+                <label style={styles.label}>Flavour</label>
+                <input
+                  type="text"
+                  name="model"
+                  value={currentItem.model}
+                  onChange={handleItemChange}
+                  placeholder="e.g., Chocolate, Vanilla"
+                  style={styles.input}
+                  disabled={loading}
+                />
+              </div>
+
+              <div style={styles.formGroup}>
                 <label style={styles.label}>Type</label>
                 <input
                   type="text"
@@ -1783,7 +1808,7 @@ const SupplierPage = () => {
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Buy Price (₹)</label>
+                <label style={styles.label}>Price (₹)</label>
                 <input
                   type="number"
                   name="buyPrice"

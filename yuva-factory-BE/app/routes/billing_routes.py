@@ -636,7 +636,7 @@ def get_all_bills():
                 'paidAmount': round(bill.paid_amount, 2),
                 'paymentMethod': bill.payment_method,
                 'paymentStatus': bill.payment_status,
-                'itemCount': len(bill.items),
+                'itemCount': sum(item.quantity for item in bill.items),
                 'pendingItems': pending_count,
                 'createdAt': bill.created_at.isoformat() if bill.created_at else None,
                 'createdBy': bill.created_by,

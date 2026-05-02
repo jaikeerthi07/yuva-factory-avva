@@ -54,7 +54,7 @@ const PaymentTracking = () => {
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${BASE_URL}/api/suppliers-with-items`, {
+      const response = await fetch(`${BASE_URL}/api/suppliers-payment-data`, {
         credentials: 'include',
         mode: 'cors',
         headers: {
@@ -181,11 +181,12 @@ const PaymentTracking = () => {
   };
 
   // Delete payment
-  const deletePayment = async (paymentId) => {
+  const deletePayment = async (pId) => {
+    const paymentId = Number(pId); // Ensure it is a number
     if (window.confirm('Are you sure you want to delete this payment record?')) {
       try {
         setLoading(true);
-        const response = await fetch(`${BASE_URL}/api/payments/${paymentId}`, {
+        const response = await fetch(`${BASE_URL}/api/supplier-payments/${paymentId}`, {
           method: 'DELETE',
           credentials: 'include',
           mode: 'cors'
@@ -777,7 +778,7 @@ const PaymentTracking = () => {
                     <th style={styles.th}>Flavour</th>
                     <th style={styles.th}>Type</th>
                     <th style={styles.th}>Quantity</th>
-                    <th style={styles.th}>Unit Price</th>
+                    <th style={styles.th}>Price</th>
                     <th style={styles.th}>Total</th>
                   </tr>
                 </thead>
@@ -793,7 +794,7 @@ const PaymentTracking = () => {
                             </span>
                           )}
                         </td>
-                        <td style={styles.td}>{item.model}</td>
+                        <td style={styles.td}>{item.model || item.Model || item.product_model || item.Flavour || '—'}</td>
                         <td style={styles.td}>{item.type || '—'}</td>
                         <td style={styles.td}>{item.quantity || 0}</td>
                         <td style={styles.td}>{formatCurrency(item.buy_price)}</td>

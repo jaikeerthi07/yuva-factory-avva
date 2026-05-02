@@ -94,7 +94,8 @@ const BillItemsPage = () => {
               id: item.id,
               product_id: item.product_id,
               product_name: item.product_name,
-              product_Model: item.product_model,
+              // Normalize flavour/model key to product_model for consistent UI display
+              product_model: item.product_model || item.product_Model || item.model || item.Model || item.Flavour || "",
               product_type: item.product_type,
               sell_price: item.sell_price,
               quantity: item.quantity,

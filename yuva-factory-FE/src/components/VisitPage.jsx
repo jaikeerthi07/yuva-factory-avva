@@ -941,7 +941,7 @@ const VisitBillPage = () => {
       };
 
       // Calculate item count and due amount
-      processedBill.itemCount = processedBill.items.length;
+      processedBill.itemCount = processedBill.items.reduce((sum, item) => sum + (parseInt(item.quantity || item.qty || 0)), 0);
       processedBill.dueAmount = processedBill.total - processedBill.paidAmount;
 
       console.log('Processed Bill Details:', processedBill);
@@ -2496,7 +2496,7 @@ const VisitBillPage = () => {
             </div>
 
             <h3 style={{ color: '#f9fafb', marginBottom: '10px', fontSize: '16px' }}>
-              Items ({selectedBill.items?.length || 0})
+              Items ({selectedBill.items?.reduce((sum, item) => sum + (parseInt(item.quantity || item.qty || 0)), 0) || 0})
             </h3>
 
             <table style={styles.modalTable}>

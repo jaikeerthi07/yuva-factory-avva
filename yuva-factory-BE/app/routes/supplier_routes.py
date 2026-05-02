@@ -866,7 +866,7 @@ def delete_item(item_id):
 
 # ==================== BULK OPERATIONS ====================
 
-@supplier_bp.route("/api/suppliers-with-items", methods=["GET", "OPTIONS"])
+@supplier_bp.route("/api/suppliers-mgmt-data", methods=["GET", "OPTIONS"])
 def get_suppliers_with_items():
     """Get all suppliers with their items"""
     try:
