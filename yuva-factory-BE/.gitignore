@@ -11,7 +11,4 @@ build/
 *.egg-info/
 flask_session/
 *.db
-!create_db.py
-!create_enquiries_table.py
-!create_admin.py
 uploads/

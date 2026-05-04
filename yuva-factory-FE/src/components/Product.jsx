@@ -23,6 +23,10 @@ export default function ItemsPage() {
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  
+  // Custom HSN Dropdown States
+  const [showHsnDropdown, setShowHsnDropdown] = useState(false);
+  const [filteredHsnCodes, setFilteredHsnCodes] = useState(ALL_HSN_CODES);
 
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
@@ -498,6 +502,16 @@ export default function ItemsPage() {
       const updated = { ...prev, [field]: value };
       return calculateAmount(updated);
     });
+
+    // If changing HSN (watts), filter suggestions
+    if (field === 'watts') {
+      const filtered = ALL_HSN_CODES.filter(hsn => 
+        hsn.code.toLowerCase().includes(value.toLowerCase()) || 
+        hsn.label.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredHsnCodes(filtered);
+      setShowHsnDropdown(true);
+    }
   };
 
   const handleEditSave = async () => {
@@ -593,6 +607,8 @@ export default function ItemsPage() {
 
     console.log('Creating new item:', newItem);
     setEditingItem(newItem);
+    setFilteredHsnCodes(ALL_HSN_CODES);
+    setShowHsnDropdown(false);
     setShowEditModal(true);
   };
 
@@ -1018,6 +1034,7 @@ export default function ItemsPage() {
     },
     formGroup: {
       marginBottom: '15px',
+      position: 'relative', // Needed for absolute positioned dropdown
     },
     label: {
       display: 'block',
@@ -1102,6 +1119,36 @@ export default function ItemsPage() {
     statSkipped: {
       backgroundColor: 'rgba(156, 163, 175, 0.2)',
       color: '#9ca3af',
+    },
+    dropdown: {
+      position: "absolute",
+      top: "100%",
+      left: 0,
+      right: 0,
+      backgroundColor: "#1f2937",
+      border: "1px solid #374151",
+      borderRadius: "4px",
+      marginTop: "4px",
+      maxHeight: "200px",
+      overflowY: "auto",
+      zIndex: 1100,
+      boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+    },
+    dropdownItem: {
+      padding: "8px 12px",
+      cursor: "pointer",
+      borderBottom: "1px solid #374151",
+      transition: "all 0.2s",
+    },
+    dropdownCode: {
+      fontWeight: "bold",
+      color: "#fff",
+      fontSize: "13px",
+      display: "block",
+    },
+    dropdownLabel: {
+      color: "#9ca3af",
+      fontSize: "11px",
     },
   };
 
@@ -1426,18 +1473,38 @@ export default function ItemsPage() {
               <input
                 style={modalStyles.input}
                 type="text"
-                list="product-hsn-codes"
+                autoComplete="off"
                 value={editingItem.watts || ""}
                 onChange={(e) => handleEditChange("watts", e.target.value)}
-                placeholder="Type HSN code (e.g. 02) or pick suggestion"
+                onFocus={() => setShowHsnDropdown(true)}
+                placeholder="Type HSN code or pick suggestion"
               />
-              <datalist id="product-hsn-codes">
-                {ALL_HSN_CODES.map(hsn => (
-                  <option key={hsn.code} value={hsn.code}>
-                    {hsn.label}
-                  </option>
-                ))}
-              </datalist>
+              {showHsnDropdown && filteredHsnCodes.length > 0 && (
+                <div style={modalStyles.dropdown}>
+                  {filteredHsnCodes.map(hsn => (
+                    <div 
+                      key={hsn.code} 
+                      style={modalStyles.dropdownItem}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#374151"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      onClick={() => {
+                        handleEditChange("watts", hsn.code);
+                        setShowHsnDropdown(false);
+                      }}
+                    >
+                      <span style={modalStyles.dropdownCode}>{hsn.code}</span>
+                      <span style={modalStyles.dropdownLabel}>{hsn.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Global click listener to close dropdown */}
+              {showHsnDropdown && (
+                <div 
+                  style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}
+                  onClick={() => setShowHsnDropdown(false)}
+                />
+              )}
             </div>
 
             <div style={modalStyles.formGroup}>

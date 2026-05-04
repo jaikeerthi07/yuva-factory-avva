@@ -59,6 +59,15 @@ const SupplierPage = () => {
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Custom HSN Dropdown States
+  const [supplierHsnSearch, setSupplierHsnSearch] = useState('');
+  const [showSupplierHsnDropdown, setShowSupplierHsnDropdown] = useState(false);
+  const [filteredSupplierHsn, setFilteredSupplierHsn] = useState(ALL_HSN_CODES);
+
+  const [itemHsnSearch, setItemHsnSearch] = useState('');
+  const [showItemHsnDropdown, setShowItemHsnDropdown] = useState(false);
+  const [filteredItemHsn, setFilteredItemHsn] = useState(ALL_HSN_CODES);
+
   // Pagination and Search States
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -150,6 +159,16 @@ const SupplierPage = () => {
       ...prev,
       [name]: normalizedValue
     }));
+
+    // If changing HSN, filter suggestions
+    if (name === 'hsn') {
+      const filtered = ALL_HSN_CODES.filter(hsn => 
+        hsn.code.toLowerCase().includes(value.toLowerCase()) || 
+        hsn.label.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredSupplierHsn(filtered);
+      setShowSupplierHsnDropdown(true);
+    }
   };
 
   // Handle item input change
@@ -159,6 +178,16 @@ const SupplierPage = () => {
       ...prev,
       [name]: value
     }));
+
+    // If changing HSN (stored in watts), filter suggestions
+    if (name === 'watts') {
+      const filtered = ALL_HSN_CODES.filter(hsn => 
+        hsn.code.toLowerCase().includes(value.toLowerCase()) || 
+        hsn.label.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredItemHsn(filtered);
+      setShowItemHsnDropdown(true);
+    }
   };
 
   // Handle file selection
@@ -508,6 +537,8 @@ const SupplierPage = () => {
       hsn: ''
     });
     setShowSupplierPopup(true);
+    setFilteredSupplierHsn(ALL_HSN_CODES);
+    setShowSupplierHsnDropdown(false);
   };
 
   // Go back to supplier selection
@@ -549,6 +580,8 @@ const SupplierPage = () => {
       setFilePreview(null);
     }
     setShowItemPopup(true);
+    setFilteredItemHsn(ALL_HSN_CODES);
+    setShowItemHsnDropdown(false);
   };
 
   // Close popups
@@ -562,6 +595,8 @@ const SupplierPage = () => {
       URL.revokeObjectURL(filePreview);
       setFilePreview(null);
     }
+    setShowSupplierHsnDropdown(false);
+    setShowItemHsnDropdown(false);
   };
 
   // Get full URL for attachment
@@ -848,6 +883,7 @@ const SupplierPage = () => {
     },
     formGroup: {
       marginBottom: "20px",
+      position: "relative", // Needed for absolute positioned dropdown
     },
     fullWidth: {
       gridColumn: "span 2",
@@ -871,6 +907,36 @@ const SupplierPage = () => {
       fontSize: "14px",
       transition: "all 0.2s",
       boxSizing: "border-box",
+    },
+    dropdown: {
+      position: "absolute",
+      top: "100%",
+      left: 0,
+      right: 0,
+      backgroundColor: "#1e293b",
+      border: "1px solid #334155",
+      borderRadius: "8px",
+      marginTop: "4px",
+      maxHeight: "250px",
+      overflowY: "auto",
+      zIndex: 1100,
+      boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+    },
+    dropdownItem: {
+      padding: "10px 16px",
+      cursor: "pointer",
+      borderBottom: "1px solid #334155",
+      transition: "all 0.2s",
+    },
+    dropdownCode: {
+      fontWeight: "bold",
+      color: "#fff",
+      fontSize: "14px",
+      display: "block",
+    },
+    dropdownLabel: {
+      color: "#94a3b8",
+      fontSize: "12px",
     },
     select: {
       width: "100%",
@@ -1642,20 +1708,40 @@ const SupplierPage = () => {
                 <input
                   name="hsn"
                   type="text"
-                  list="supplier-hsn-codes"
+                  autoComplete="off"
                   value={currentSupplier.hsn}
                   onChange={handleSupplierChange}
+                  onFocus={() => setShowSupplierHsnDropdown(true)}
                   style={styles.input}
-                  placeholder="Type HSN code (e.g. 02) or pick suggestion"
+                  placeholder="Type HSN code or pick suggestion"
                   disabled={loading}
                 />
-                <datalist id="supplier-hsn-codes">
-                  {ALL_HSN_CODES.map(hsn => (
-                    <option key={hsn.code} value={hsn.code}>
-                      {hsn.label}
-                    </option>
-                  ))}
-                </datalist>
+                {showSupplierHsnDropdown && filteredSupplierHsn.length > 0 && (
+                  <div style={styles.dropdown} className="hsn-dropdown">
+                    {filteredSupplierHsn.map(hsn => (
+                      <div 
+                        key={hsn.code} 
+                        style={styles.dropdownItem}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#334155"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                        onClick={() => {
+                          setCurrentSupplier(prev => ({ ...prev, hsn: hsn.code }));
+                          setShowSupplierHsnDropdown(false);
+                        }}
+                      >
+                        <span style={styles.dropdownCode}>{hsn.code}</span>
+                        <span style={styles.dropdownLabel}>{hsn.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Global click listener to close dropdown */}
+                {showSupplierHsnDropdown && (
+                  <div 
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}
+                    onClick={() => setShowSupplierHsnDropdown(false)}
+                  />
+                )}
               </div>
 
               {/* Row 3: Email | Phone */}
@@ -1791,20 +1877,40 @@ const SupplierPage = () => {
                 <input
                   name="watts"
                   type="text"
-                  list="supplier-item-hsn-codes"
+                  autoComplete="off"
                   value={currentItem.watts}
                   onChange={handleItemChange}
+                  onFocus={() => setShowItemHsnDropdown(true)}
                   style={styles.input}
-                  placeholder="Type HSN code (e.g. 02) or pick suggestion"
+                  placeholder="Type HSN code or pick suggestion"
                   disabled={loading}
                 />
-                <datalist id="supplier-item-hsn-codes">
-                  {ALL_HSN_CODES.map(hsn => (
-                    <option key={hsn.code} value={hsn.code}>
-                      {hsn.label}
-                    </option>
-                  ))}
-                </datalist>
+                {showItemHsnDropdown && filteredItemHsn.length > 0 && (
+                  <div style={styles.dropdown} className="hsn-dropdown">
+                    {filteredItemHsn.map(hsn => (
+                      <div 
+                        key={hsn.code} 
+                        style={styles.dropdownItem}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#334155"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                        onClick={() => {
+                          setCurrentItem(prev => ({ ...prev, watts: hsn.code }));
+                          setShowItemHsnDropdown(false);
+                        }}
+                      >
+                        <span style={styles.dropdownCode}>{hsn.code}</span>
+                        <span style={styles.dropdownLabel}>{hsn.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Global click listener to close dropdown */}
+                {showItemHsnDropdown && (
+                  <div 
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}
+                    onClick={() => setShowItemHsnDropdown(false)}
+                  />
+                )}
               </div>
 
               <div style={styles.formGroup}>
