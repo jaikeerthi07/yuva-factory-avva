@@ -303,6 +303,13 @@ const Sidebar = ({ isOpen }) => {
                 </NavLink>
               )}
 
+              {hasPermission("GSTR_reports") && (
+                <NavLink to="/gstr1" style={getLinkStyle}>
+                  <FaFileInvoice style={styles.icon} />
+                  <span style={styles.text}>GSTR1 Reports</span>
+                </NavLink>
+              )}
+
               {/* {hasPermission("quotations") && (
                 <NavLink to="/quotation" style={getLinkStyle}>
                   <FaClipboardList style={styles.icon} />

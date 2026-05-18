@@ -30,6 +30,7 @@ import UserSettings from "./components/UserSetting";
 import DiscountPage from "./components/DiscountPage"; // Import the discount page
 import CurrentCompany from "./components/CurrentCompany";
 import EnquiryPage from "./components/Enquiry";
+import GSTR1Report from "./components/GstrReport";
 
 import CustomerPage from "./components/Customer";
 import EmployeeBill from "./components/EmployeeBill";
@@ -101,6 +102,7 @@ function Layout() {
           <Route path="/serviceBillView" element={<ServiceBillView />} />
           <Route path="/warranty" element={<Warranty />} />
           <Route path="/paymenttracking" element={<PaymentTracking />} />
+          <Route path="/gstr1" element={<GSTR1Report />} />
         </Routes>
       </div>
     </>

@@ -3777,15 +3777,15 @@ const Bill = () => {
           <button
             style={{
               ...styles.whatsappButton,
-              ...(loading || activeProducts.length === 0 || !customerPhone ? styles.btnDisabled : {})
+              ...(loading || activeProducts.length === 0 || (!customerPhone && !lastGeneratedBill?.customerPhone) ? styles.btnDisabled : {})
             }}
             onClick={handleWhatsAppShare}
             onMouseEnter={(e) => e.currentTarget.style.background = '#128C7E'}
             onMouseLeave={(e) => e.currentTarget.style.background = '#25D366'}
-            disabled={loading || activeProducts.length === 0 || !customerPhone}
+            disabled={loading || activeProducts.length === 0 || (!customerPhone && !lastGeneratedBill?.customerPhone)}
           >
             <span>📱</span>
-            Share Bill on WhatsApp to {customerPhone || 'Customer Number'}
+            Share Bill on WhatsApp to {customerPhone || (lastGeneratedBill?.customerPhone) || 'Customer Number'}
           </button>
 
           {billSaved && (
