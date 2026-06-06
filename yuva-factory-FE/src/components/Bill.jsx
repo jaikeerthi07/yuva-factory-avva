@@ -1845,6 +1845,7 @@ const Bill = () => {
         billType: billType, // 'inclusive-tax' or 'exclusive-tax'
         paidAmount: paidAmount,
         paymentMethod: paymentMethod,
+        hsn: activeProducts.map(p => p.hsn || p.hns || '21050000'),
         items: activeProducts.map(p => ({
           productId: p.id,
           productSource: p.source || 'product',
@@ -2316,6 +2317,66 @@ const Bill = () => {
               font-weight: 600;
               color: #ff7a00;
             }
+
+billTableHeader: {
+  backgroundColor: '#f3f4f6'
+},
+
+
+  billTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    marginTop: '12px',
+    fontSize: '12px',
+    backgroundColor: '#ffffff',
+    borderRadius: '10px',
+    overflow: 'hidden',
+    border: '1px solid #dbe2ea'
+  },
+
+  th: {
+    padding: '10px 8px',
+    textAlign: 'center',
+    backgroundColor: '#f3f6fb',
+    color: '#1f2937',
+    fontWeight: '600',
+    borderBottom: '1px solid #dbe2ea',
+    borderRight: '1px solid #e5e7eb'
+  },
+
+  td: {
+    padding: '10px 8px',
+    textAlign: 'center',
+    color: '#131414',
+    borderBottom: '1px solid #141414',
+    borderRight: '1px solid #191919'
+  },
+
+  tr: {
+    transition: 'background 0.2s ease'
+  },
+
+  emptyTableCell: {
+    padding: '18px',
+    textAlign: 'center',
+    color: '#6b7280',
+    fontStyle: 'italic',
+    backgroundColor: '#fafafa'
+  },
+
+  billItemNameCell: {
+    textAlign: 'left',
+    minWidth: '140px',
+    fontWeight: '500'
+  },
+
+  billItemSmall: {
+    display: 'block',
+    fontSize: '10px',
+    color: '#6b7280',
+    marginTop: '2px'
+  }
+
           </style>
         </head>
         <body>
@@ -2777,7 +2838,7 @@ const Bill = () => {
                   }, 500);
                 }, 300);
               };
-            <\/script>
+            </script>
           </body>
         </html>
       `);
@@ -3416,60 +3477,96 @@ const Bill = () => {
                   Reset to Default
                 </button>
               )}
-            </div>
-            
-            <div style={styles.billItems}>
-              <div style={styles.billItemsHeader}>
-                <span>S.N</span>
-                <span>Item Name</span>
-                <span>HSN</span>
-                <span>Qty</span>
-                <span>Free</span>
-                <span>Rate</span>
-                {isTaxBill && <span>CGST {(GST_RATE_PERCENT / 2).toFixed(1)}%</span>}
-                {isTaxBill && <span>SGST {(GST_RATE_PERCENT / 2).toFixed(1)}%</span>}
-                <span>Total</span>
-              </div>
-              <div>
-                {activeProducts.length === 0 ? (
-                  <div style={styles.billItemEmpty}>
-                    <span>--- No items in bill ---</span>
-                  </div>
-                ) : (
-                  activeProducts.map((product, idx) => {
-                    const rate = parseFloat(product.sellPrice) || 0;
-                    const qty = product.quantity || 0;
-                    const freeQty = getFreeQuantity(qty);
-                    const totalItemTax = getLineTaxAmount(product);
-                    const cgstAmt = (totalItemTax / 2).toFixed(2);
-                    const sgstAmt = (totalItemTax / 2).toFixed(2);
-                    const itemTotalAmt = getLineTotalAmount(product);
+            </div><table style={styles.billTable}>
+  <thead>
+    <tr style={styles.billTableHeader}>
+      <th>S.N</th>
+      <th>Item Name</th>
+      <th>HSN</th>
+      <th>Qty</th>
+      <th>Free</th>
+      <th>Rate</th>
 
-                    return (
-                      <div key={`${product.source || 'product'}-${product.id}`} style={styles.billItem}>
-                        <span>{idx + 1}</span>
-                        <span style={styles.billItemName}>
-                          {product.name.length > 16 
-                            ? product.name.substring(0, 14) + '...' 
-                            : product.name
-                          }
-                          {product.model && (
-                            <small style={styles.billItemSmall}>{product.model}</small>
-                          )}
-                        </span>
-                        <span>{product.hns || product.hsn || '21050000'}</span>
-                        <span>{qty}</span>
-                        <span>{freeQty}</span>
-                        <span>₹{rate.toFixed(2)}</span>
-                        {isTaxBill && <span>₹{cgstAmt}</span>}
-                        {isTaxBill && <span>₹{sgstAmt}</span>}
-                        <span><strong>₹{itemTotalAmt.toFixed(2)}</strong></span>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+      {isTaxBill && (
+        <th>CGST {(GST_RATE_PERCENT / 2).toFixed(1)}%</th>
+      )}
+
+      {isTaxBill && (
+        <th>SGST {(GST_RATE_PERCENT / 2).toFixed(1)}%</th>
+      )}
+
+      <th>Total</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {activeProducts.length === 0 ? (
+      <tr>
+        <td
+          colSpan={isTaxBill ? 9 : 7}
+          style={styles.emptyTableCell}
+        >
+          --- No items in bill ---
+        </td>
+      </tr>
+    ) : (
+      activeProducts.map((product, idx) => {
+
+        const rate = parseFloat(product.sellPrice) || 0;
+        const qty = product.quantity || 0;
+
+        const freeQty = getFreeQuantity(qty);
+
+        const totalItemTax = getLineTaxAmount(product);
+
+        const cgstAmt = (totalItemTax / 2).toFixed(2);
+        const sgstAmt = (totalItemTax / 2).toFixed(2);
+
+        const itemTotalAmt = getLineTotalAmount(product);
+
+        return (
+          <tr
+            key={`${product.source || 'product'}-${product.id}`}
+          >
+            <td>{idx + 1}</td>
+
+            <td style={styles.billItemNameCell}>
+              {product.name.length > 16
+                ? product.name.substring(0, 14) + '...'
+                : product.name}
+
+              {product.model && (
+                <small style={styles.billItemSmall}>
+                  {product.model}
+                </small>
+              )}
+            </td>
+
+            <td>
+              {product.hns || product.hsn || '21050000'}
+            </td>
+
+            <td>{qty}</td>
+
+            <td>{freeQty}</td>
+
+            <td>₹{rate.toFixed(2)}</td>
+
+            {isTaxBill && <td>₹{cgstAmt}</td>}
+
+            {isTaxBill && <td>₹{sgstAmt}</td>}
+
+            <td>
+              <strong>
+                ₹{itemTotalAmt.toFixed(2)}
+              </strong>
+            </td>
+          </tr>
+        );
+      })
+    )}
+  </tbody>
+</table>
             
             <div style={styles.billSummary}>
               <div style={styles.summaryRow}>
@@ -3498,7 +3595,7 @@ const Bill = () => {
               
               <div style={styles.summaryRowTotal}>
                 <span>Total:</span>
-                <span style={{color: '#10b981', fontSize: '14px'}}>₹{total.toFixed(2)}</span>
+                <span style={{color: '#10b981', fontSize: '14px'}}>₹{(Number(total) + Number(taxAmount)).toFixed(2)}</span>
               </div>
             </div>
 

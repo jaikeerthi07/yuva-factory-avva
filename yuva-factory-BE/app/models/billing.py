@@ -58,7 +58,8 @@ class Bill(db.Model):
     payment_bank_name = db.Column(db.String(100), nullable=True)
     payment_cheque_number = db.Column(db.String(50), nullable=True)
     cash_received = db.Column(db.Float, default=0)
-    
+    hsn = db.Column(db.Float)
+
     # Metadata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

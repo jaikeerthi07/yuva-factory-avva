@@ -1,8 +1,8 @@
-"""empty message
+"""initial migration
 
-Revision ID: 027e77548666
+Revision ID: 8f585ee5fcdb
 Revises: 
-Create Date: 2026-04-01 21:23:18.521766
+Create Date: 2026-05-18 21:28:04.581824
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '027e77548666'
+revision = '8f585ee5fcdb'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -29,6 +29,20 @@ def upgrade():
     sa.Column('customer_type', sa.String(length=50), nullable=True),
     sa.Column('vehicle_name', sa.String(length=100), nullable=True),
     sa.Column('vehicle_number', sa.String(length=50), nullable=True),
+    sa.Column('company_id', sa.Integer(), nullable=True),
+    sa.Column('company_name', sa.String(length=200), nullable=True),
+    sa.Column('company_logo', sa.String(length=500), nullable=True),
+    sa.Column('company_address', sa.String(length=500), nullable=True),
+    sa.Column('company_city', sa.String(length=100), nullable=True),
+    sa.Column('company_phone', sa.String(length=50), nullable=True),
+    sa.Column('company_email', sa.String(length=100), nullable=True),
+    sa.Column('company_gst', sa.String(length=50), nullable=True),
+    sa.Column('company_alternate_phone', sa.String(length=50), nullable=True),
+    sa.Column('company_bank_name', sa.String(length=100), nullable=True),
+    sa.Column('company_bank_account', sa.String(length=50), nullable=True),
+    sa.Column('company_bank_ifsc', sa.String(length=50), nullable=True),
+    sa.Column('company_bank_branch', sa.String(length=100), nullable=True),
+    sa.Column('company_upi_id', sa.String(length=100), nullable=True),
     sa.Column('subtotal', sa.Float(), nullable=True),
     sa.Column('discount', sa.Float(), nullable=True),
     sa.Column('discount_type', sa.String(length=20), nullable=True),
@@ -39,9 +53,17 @@ def upgrade():
     sa.Column('change_amount', sa.Float(), nullable=True),
     sa.Column('payment_method', sa.String(length=50), nullable=True),
     sa.Column('payment_status', sa.String(length=20), nullable=True),
+    sa.Column('payment_card_number', sa.String(length=20), nullable=True),
+    sa.Column('payment_card_holder', sa.String(length=100), nullable=True),
+    sa.Column('payment_upi_id', sa.String(length=100), nullable=True),
+    sa.Column('payment_transaction_id', sa.String(length=100), nullable=True),
+    sa.Column('payment_bank_name', sa.String(length=100), nullable=True),
+    sa.Column('payment_cheque_number', sa.String(length=50), nullable=True),
+    sa.Column('cash_received', sa.Float(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('created_by', sa.Integer(), nullable=True),
+    sa.Column('created_by_name', sa.String(length=100), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('bill_number')
     )
@@ -176,6 +198,16 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('quotation_number')
     )
+    op.create_table('raw_materials',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('buy_price', sa.Float(), nullable=False),
+    sa.Column('sell_price', sa.Float(), nullable=False),
+    sa.Column('quantity', sa.Integer(), nullable=False),
+    sa.Column('amount', sa.Float(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('services',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
@@ -192,6 +224,7 @@ def upgrade():
     op.create_table('user_types',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('base_template', sa.String(length=200), nullable=True),
     sa.Column('permissions', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
@@ -201,7 +234,8 @@ def upgrade():
     op.create_table('bill_items',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('bill_id', sa.Integer(), nullable=False),
-    sa.Column('product_id', sa.Integer(), nullable=False),
+    sa.Column('product_id', sa.Integer(), nullable=True),
+    sa.Column('item_source', sa.String(length=20), nullable=True),
     sa.Column('product_name', sa.String(length=100), nullable=False),
     sa.Column('product_model', sa.String(length=100), nullable=True),
     sa.Column('product_type', sa.String(length=100), nullable=True),
@@ -210,7 +244,6 @@ def upgrade():
     sa.Column('total', sa.Float(), nullable=False),
     sa.Column('item_status', sa.String(length=20), nullable=False),
     sa.ForeignKeyConstraint(['bill_id'], ['bills.id'], ),
-    sa.ForeignKeyConstraint(['product_id'], ['products.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('discount_logs',
@@ -325,6 +358,8 @@ def upgrade():
     sa.Column('email', sa.String(length=100), nullable=True),
     sa.Column('phone', sa.String(length=20), nullable=True),
     sa.Column('address', sa.Text(), nullable=True),
+    sa.Column('gst', sa.String(length=15), nullable=True),
+    sa.Column('hsn_code', sa.String(length=20), nullable=True),
     sa.Column('created_by', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
@@ -362,11 +397,25 @@ def upgrade():
     sa.ForeignKeyConstraint(['supplier_id'], ['suppliers.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('supplier_payments',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('supplier_id', sa.Integer(), nullable=False),
+    sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.Column('payment_method', sa.String(length=50), nullable=False),
+    sa.Column('reference_number', sa.String(length=100), nullable=True),
+    sa.Column('notes', sa.Text(), nullable=True),
+    sa.Column('payment_date', sa.DateTime(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['supplier_id'], ['suppliers.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table('supplier_payments')
     op.drop_table('items')
     op.drop_table('attendance')
     op.drop_table('suppliers')
@@ -382,6 +431,7 @@ def downgrade():
     op.drop_table('bill_items')
     op.drop_table('user_types')
     op.drop_table('services')
+    op.drop_table('raw_materials')
     op.drop_table('quotations')
     op.drop_table('products')
     op.drop_table('login')

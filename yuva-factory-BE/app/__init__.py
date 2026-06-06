@@ -50,6 +50,7 @@ def create_app():
     from app.routes.permissions_routes import permissions_bp
     from app.routes.payment_routes import payment_tracking_bp
     from app.routes.raw_material_routes import raw_material_bp
+    from app.routes.gstrreport_routes import gstrreports_bp
 
     app.register_blueprint(login_bp, url_prefix="/api")
     app.register_blueprint(product_bp, url_prefix="/api")
@@ -67,6 +68,7 @@ def create_app():
     app.register_blueprint(permissions_bp)
     app.register_blueprint(payment_tracking_bp)
     app.register_blueprint(raw_material_bp, url_prefix="/api")
+    app.register_blueprint(gstrreports_bp)
 
     # Health Check Route
     @app.route('/api/health', methods=['GET'])

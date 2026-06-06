@@ -51,7 +51,8 @@ def search_products_for_billing():
             or_(
                 Product.name.ilike(f'%{query}%'),
                 Product.model.ilike(f'%{query}%'),
-                Product.type.ilike(f'%{query}%')
+                Product.type.ilike(f'%{query}%'),
+                
             )
         ).filter(Product.quantity > 0).limit(10).all()
         
@@ -67,7 +68,8 @@ def search_products_for_billing():
             'type': p.type or '',
             'sellPrice': p.sell_price,
             'quantity': p.quantity,
-            'inStock': p.quantity > 0
+            'inStock': p.quantity > 0,
+            'hsn':''
         } for p in products]
         
         result.extend([{
@@ -269,6 +271,7 @@ def create_bill():
         bill.payment_bank_name = data.get('bankName', '')
         bill.payment_cheque_number = data.get('chequeNumber', '')
         
+        bill.hsn=data.get('hsn', '')
         # Add items and update stock
         items_added = []
         for item_data in data.get('items', []):
