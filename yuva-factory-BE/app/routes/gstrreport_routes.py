@@ -5,98 +5,87 @@ from app.models.billing import Bill,BillItem
 from datetime import datetime
 from sqlalchemy import func
 
+import re
+import requests
 def get_place_supply(address):
 
     if not address:
         return ""
 
-    address = address.lower()
+    state_code_map = {
+        "Jammu and Kashmir": "Jammu and Kashmir - 01",
+    "Himachal Pradesh": "Himachal Pradesh - 02",
+    "Punjab": "Punjab - 03",
+    "Chandigarh": "Chandigarh - 04",
+    "Uttarakhand": "Uttarakhand - 05",
+    "Haryana": "Haryana - 06",
+    "Delhi": "Delhi - 07",
+    "Rajasthan": "Rajasthan - 08",
+    "Uttar Pradesh": "Uttar Pradesh - 09",
+    "Bihar": "Bihar - 10",
+    "Sikkim": "Sikkim - 11",
+    "Arunachal Pradesh": "Arunachal Pradesh - 12",
+    "Nagaland": "Nagaland - 13",
+    "Manipur": "Manipur - 14",
+    "Mizoram": "Mizoram - 15",
+    "Tripura": "Tripura - 16",
+    "Meghalaya": "Meghalaya - 17",
+    "Assam": "Assam - 18",
+    "West Bengal": "West Bengal - 19",
+    "Jharkhand": "Jharkhand - 20",
+    "Odisha": "Odisha - 21",
+    "Chhattisgarh": "Chhattisgarh - 22",
+    "Madhya Pradesh": "Madhya Pradesh - 23",
+    "Gujarat": "Gujarat - 24",
 
-    state_map = {
+    "Dadra and Nagar Haveli and Daman and Diu":
+    "Dadra and Nagar Haveli and Daman and Diu - 26",
 
-    "jammu and kashmir": "Jammu and Kashmir - 01",
-    "himachal pradesh": "Himachal Pradesh - 02",
-    "punjab": "Punjab - 03",
-    "chandigarh": "Chandigarh - 04",
-    "uttarakhand": "Uttarakhand - 05",
-    "haryana": "Haryana - 06",
-    "delhi": "Delhi - 07",
-    "rajasthan": "Rajasthan - 08",
-    "uttar pradesh": "Uttar Pradesh - 09",
-    "bihar": "Bihar - 10",
-    "sikkim": "Sikkim - 11",
-    "arunachal pradesh": "Arunachal Pradesh - 12",
-    "nagaland": "Nagaland - 13",
-    "manipur": "Manipur - 14",
-    "mizoram": "Mizoram - 15",
-    "tripura": "Tripura - 16",
-    "meghalaya": "Meghalaya - 17",
-    "assam": "Assam - 18",
-    "west bengal": "West Bengal - 19",
-    "jharkhand": "Jharkhand - 20",
-    "odisha": "Odisha - 21",
-    "chhattisgarh": "Chhattisgarh - 22",
-    "madhya pradesh": "Madhya Pradesh - 23",
-    "gujarat": "Gujarat - 24",
-    "dadra and nagar haveli and daman and diu": "Dadra and Nagar Haveli and Daman and Diu - 26",
-    "maharashtra": "Maharashtra - 27",
-    "karnataka": "Karnataka - 29",
-    "goa": "Goa - 30",
-    "lakshadweep": "Lakshadweep - 31",
-    "kerala": "Kerala - 32",
-    "tamil nadu": "Tamil Nadu - 33",
-    "puducherry": "Puducherry - 34",
-    "andaman and nicobar islands": "Andaman and Nicobar Islands - 35",
-    "telangana": "Telangana - 36",
-    "andhra pradesh": "Andhra Pradesh - 37",
-    "ladakh": "Ladakh - 38",
+    "Maharashtra": "Maharashtra - 27",
+    "Karnataka": "Karnataka - 29",
+    "Goa": "Goa - 30",
+    "Lakshadweep": "Lakshadweep - 31",
+    "Kerala": "Kerala - 32",
+    "Tamil Nadu": "Tamil Nadu - 33",
+    "Puducherry": "Puducherry - 34",
 
-    # Common Cities
+    "Andaman and Nicobar Islands":
+    "Andaman and Nicobar Islands - 35",
 
-    "chennai": "Tamil Nadu - 33",
-    "coimbatore": "Tamil Nadu - 33",
-    "madurai": "Tamil Nadu - 33",
-
-    "bangalore": "Karnataka - 29",
-    "bengaluru": "Karnataka - 29",
-    "mysore": "Karnataka - 29",
-
-    "kochi": "Kerala - 32",
-    "thiruvananthapuram": "Kerala - 32",
-
-    "hyderabad": "Telangana - 36",
-
-    "vijayawada": "Andhra Pradesh - 37",
-    "visakhapatnam": "Andhra Pradesh - 37",
-
-    "mumbai": "Maharashtra - 27",
-    "pune": "Maharashtra - 27",
-    "nagpur": "Maharashtra - 27",
-
-    "kolkata": "West Bengal - 19",
-
-    "ahmedabad": "Gujarat - 24",
-
-    "jaipur": "Rajasthan - 08",
-
-    "lucknow": "Uttar Pradesh - 09",
-
-    "patna": "Bihar - 10",
-
-    "bhubaneswar": "Odisha - 21",
-
-    "bhopal": "Madhya Pradesh - 23",
-
-    "delhi": "Delhi - 07"
-
+    "Telangana": "Telangana - 36",
+    "Andhra Pradesh": "Andhra Pradesh - 37",
+    "Ladakh": "Ladakh - 38"
     }
 
-    for key, value in state_map.items():
+    pincode_match = re.search(r'\b\d{6}\b', address)
 
-        if key in address:
-            return value
+    if not pincode_match:
+        return ""
 
+    pincode = pincode_match.group()
+
+    url = f"https://api.postalpincode.in/pincode/{pincode}"
+
+    headers = {
+      "User-Agent": "Mozilla/5.0"
+    }
+
+    response = requests.get(
+    url,
+    headers=headers,
+    timeout=10
+    )
+    data = response.json()
+
+    if data[0]["Status"] == "Success":
+
+     state = data[0]["PostOffice"][0]["State"]
+
+     return state_code_map.get(state, "")
+    
     return ""
+
+   
 gstrreports_bp = Blueprint('gstrreports_bp', __name__)
 
 #b2b,sez,de
