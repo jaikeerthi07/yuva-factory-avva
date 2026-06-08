@@ -186,12 +186,21 @@ const VisitBillPage = () => {
     const GST_RATE_PERCENT = 5;
     const GST_MULTIPLIER = 1.05;
     
+    const isExclusiveTaxBill = bill.isExclusiveTaxBill || false;
+    
+    if (taxAmount === 0 && subtotal > 0) {
+      if (isExclusiveTaxBill) {
+        taxAmount = ((subtotal - discountAmount) / GST_MULTIPLIER) * (GST_RATE_PERCENT / 100);
+      } else {
+        taxAmount = (subtotal - discountAmount) - ((subtotal - discountAmount) / GST_MULTIPLIER);
+      }
+    }
+    
     const cgstTotal = (taxAmount / 2).toFixed(2);
     const sgstTotal = (taxAmount / 2).toFixed(2);
     const igstTotal = taxAmount.toFixed(2);
     
-    const isTaxBill = taxAmount > 0;
-    const isExclusiveTaxBill = bill.isExclusiveTaxBill || false;
+    const isTaxBill = true;
     const customerType = bill.customerType || 'external';
     const paymentMethod = bill.paymentMethod || 'cash';
     const paymentStatus = bill.paymentStatus || (paidAmount >= total ? 'paid' : 'partial');
@@ -486,13 +495,7 @@ const VisitBillPage = () => {
               <div class="signature-box">Authorized Signature</div>
             </div>
 
-            <div class="payment-section">
-              <div class="payment-row"><span>Payment Method:</span><span>${paymentMethod.toUpperCase()}</span></div>
-              <div class="payment-row"><span>Paid Amount:</span><span>₹${paidAmount.toFixed(2)}</span></div>
-              <div class="payment-row"><span>Payment Status:</span><span style="font-weight: bold;">${paymentStatus.toUpperCase()}</span></div>
-              ${due > 0.01 ? `<div class="payment-row"><span>Due Amount:</span><span>₹${due.toFixed(2)}</span></div>` : ''}
-              ${paymentMethod === 'cash' && paidAmount >= total ? `<div class="payment-row"><span>Change:</span><span class="change-amount">₹${change.toFixed(2)}</span></div>` : ''}
-            </div>
+
             
             <div class="bill-footer">
               <p>Thank you for your purchase!</p>
@@ -799,7 +802,7 @@ const VisitBillPage = () => {
         if ((!bill.itemCount || bill.itemCount === 0) && bill.items && bill.items.length > 0) {
           bill.itemCount = bill.items.reduce((sum, item) => sum + (parseInt(item.quantity || item.qty || 0)), 0);
         }
-        bill.dueAmount = (bill.total || 0) - (bill.paidAmount || 0);
+        bill.dueAmount = Math.max(0, (bill.total || 0) - (bill.paidAmount || 0));
       });
 
       // Filter to show only bills with bill numbers starting with "BT"
@@ -822,7 +825,7 @@ const VisitBillPage = () => {
     }
   };
 
-  const fetchBillDetails = async (billId) => {
+  const fetchBillDetails = async (billId, isForPrint = false) => {
     try {
       setLoading(true);
 
@@ -830,8 +833,12 @@ const VisitBillPage = () => {
       const existingBill = bills.find(b => b.id === billId);
       if (existingBill && existingBill.items && existingBill.items.length > 0) {
         console.log('Using existing bill data');
-        setSelectedBill(existingBill);
-        setShowBillModal(true);
+        if (isForPrint) {
+          handlePrintBill(existingBill);
+        } else {
+          setSelectedBill(existingBill);
+          setShowBillModal(true);
+        }
         setLoading(false);
         return;
       }
@@ -866,8 +873,12 @@ const VisitBillPage = () => {
         const billFromList = bills.find(b => b.id === billId);
         if (billFromList) {
           console.log('Using bill from list as fallback');
-          setSelectedBill(billFromList);
-          setShowBillModal(true);
+          if (isForPrint) {
+            handlePrintBill(billFromList);
+          } else {
+            setSelectedBill(billFromList);
+            setShowBillModal(true);
+          }
           setLoading(false);
           return;
         }
@@ -942,12 +953,16 @@ const VisitBillPage = () => {
 
       // Calculate item count and due amount
       processedBill.itemCount = processedBill.items.reduce((sum, item) => sum + (parseInt(item.quantity || item.qty || 0)), 0);
-      processedBill.dueAmount = processedBill.total - processedBill.paidAmount;
+      processedBill.dueAmount = Math.max(0, processedBill.total - processedBill.paidAmount);
 
       console.log('Processed Bill Details:', processedBill);
 
-      setSelectedBill(processedBill);
-      setShowBillModal(true);
+      if (isForPrint) {
+        handlePrintBill(processedBill);
+      } else {
+        setSelectedBill(processedBill);
+        setShowBillModal(true);
+      }
     } catch (err) {
       console.error('Error fetching bill details:', err);
 
@@ -955,8 +970,12 @@ const VisitBillPage = () => {
       const billFromList = bills.find(b => b.id === billId);
       if (billFromList) {
         console.log('Using bill from list as fallback after error');
-        setSelectedBill(billFromList);
-        setShowBillModal(true);
+        if (isForPrint) {
+          handlePrintBill(billFromList);
+        } else {
+          setSelectedBill(billFromList);
+          setShowBillModal(true);
+        }
       } else {
         showMessage("error", "❌ Failed to load bill details");
       }
@@ -992,7 +1011,7 @@ const VisitBillPage = () => {
     const whatsappNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
     // Create message with company details
-    const dueAmount = (bill.total || 0) - (bill.paidAmount || 0);
+    const dueAmount = Math.max(0, (bill.total || 0) - (bill.paidAmount || 0));
     const items = bill.items || [];
 
     let message = `*${companyDetails.name}*\n`;
@@ -1169,7 +1188,7 @@ const VisitBillPage = () => {
         'Total (₹)': (bill.total || 0).toFixed(2),
         'Paid (₹)': (bill.paidAmount || 0).toFixed(2),
         'Change (₹)': (bill.changeAmount || 0).toFixed(2),
-        'Due (₹)': ((bill.total || 0) - (bill.paidAmount || 0)).toFixed(2),
+        'Due (₹)': Math.max(0, (bill.total || 0) - (bill.paidAmount || 0)).toFixed(2),
         'Payment Method': (bill.paymentMethod || 'cash').toUpperCase()
       }));
 
@@ -1284,7 +1303,7 @@ const VisitBillPage = () => {
           discountDisplay,
           total.toFixed(2),
           paidAmount.toFixed(2),
-          (total - paidAmount).toFixed(2),
+          Math.max(0, total - paidAmount).toFixed(2),
           (bill.paymentMethod || 'cash').substring(0, 3).toUpperCase()
         ];
       });
@@ -2148,7 +2167,7 @@ const VisitBillPage = () => {
               </tr>
             ) : (
               currentBills.map((bill) => {
-                const dueAmount = (bill.total || 0) - (bill.paidAmount || 0);
+                const dueAmount = Math.max(0, (bill.total || 0) - (bill.paidAmount || 0));
 
                 // Format discount display
                 let discountDisplay = '';
@@ -2267,7 +2286,7 @@ const VisitBillPage = () => {
                       </button>
                       <button
                         style={{ ...styles.actionButton, backgroundColor: '#059669', color: 'white', marginRight: '4px' }}
-                        onClick={() => handlePrintBill(bill)}
+                        onClick={() => fetchBillDetails(bill.id, true)}
                         title="Print Bill"
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = '#047857';
