@@ -6,23 +6,124 @@ const API_BASE_URL = 'http://localhost:5000/api';
 
 const CustomerDetailsPage = () => {
   const navigate = useNavigate();
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomerType, setSelectedCustomerType] = useState('all');
-  
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  
+
   // Bill modal state
   const [showBillModal, setShowBillModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerBills, setCustomerBills] = useState([]);
   const [loadingBills, setLoadingBills] = useState(false);
+
+  // Add Customer modal state
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    gst: '',
+    type: 'regular'
+  });
+  const [submittingCustomer, setSubmittingCustomer] = useState(false);
+
+  // Edit Customer modal state
+  const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [originalPhone, setOriginalPhone] = useState('');
+
+  const handleEditCustomer = (customer) => {
+    if (!customer.customerPhone) {
+      alert("Cannot edit a customer without a phone number.");
+      return;
+    }
+    setEditingCustomer({
+      name: customer.customerName,
+      phone: customer.customerPhone,
+      email: customer.customerEmail,
+      address: customer.customerAddress,
+      gst: customer.customerGST,
+      type: customer.customerType
+    });
+    setOriginalPhone(customer.customerPhone);
+    setShowEditCustomerModal(true);
+  };
+
+  const handleEditCustomerSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingCustomer(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/customers/${encodeURIComponent(originalPhone)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingCustomer)
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update customer');
+      }
+      setShowEditCustomerModal(false);
+      fetchAllCustomers();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSubmittingCustomer(false);
+    }
+  };
+
+  const handleAddCustomerSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingCustomer(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCustomer)
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add customer');
+      }
+      setShowAddCustomerModal(false);
+      setNewCustomer({ name: '', phone: '', email: '', address: '', gst: '', type: 'regular' });
+      fetchAllCustomers();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSubmittingCustomer(false);
+    }
+  };
+
+  const handleDeleteCustomer = async (customer) => {
+    if (!customer.customerPhone) {
+      alert('Cannot delete a customer without a phone number (bill-only record).');
+      return;
+    }
+    const confirmed = window.confirm(`Are you sure you want to delete this customer?\n\n"${customer.customerName}"`);
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/customers/${encodeURIComponent(customer.customerPhone)}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete customer');
+      }
+      fetchAllCustomers();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   // Fetch all bills and extract unique customers
   useEffect(() => {
@@ -33,64 +134,115 @@ const CustomerDetailsPage = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Fetch all bills with pagination to get all customers
+
+      // Primary map keyed by phone (or name if no phone)
+      const customerMap = new Map();
+      // Secondary index: lowercase name -> same entry object (for bill matching)
+      const nameIndex = new Map();
+
+      // 1. Fetch explicit customers from DB
+      try {
+        const custResponse = await fetch(`${API_BASE_URL}/customers`);
+        if (custResponse.ok) {
+          const custData = await custResponse.json();
+          if (custData.customers) {
+            custData.customers.forEach(cust => {
+              const primaryKey = cust.phone || cust.name;
+              const entry = {
+                id: `cust_${cust.id}`,
+                customerName: cust.name || 'Unknown',
+                customerPhone: cust.phone || '',
+                customerEmail: cust.email || '',
+                customerGST: cust.gst || '',
+                customerAddress: cust.address || '',
+                customerType: cust.type || 'regular',
+                vehicleName: '',
+                vehicleNumber: '',
+                totalSpent: 0,
+                billCount: 0,
+                lastBillDate: cust.created_at || new Date().toISOString()
+              };
+              customerMap.set(primaryKey, entry);
+              // Also index by name so bills with matching name find this entry
+              if (cust.name) {
+                nameIndex.set(cust.name.toLowerCase(), entry);
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching explicit customers:', err);
+      }
+
+      // 2. Fetch all bills with pagination
       let allBills = [];
       let page = 1;
       let hasMore = true;
-      
+
       while (hasMore) {
         const response = await fetch(`${API_BASE_URL}/billing/bills?page=${page}&per_page=100`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch bills');
         }
-        
+
         const data = await response.json();
         allBills = [...allBills, ...data.bills];
-        
+
         hasMore = page < data.pages;
         page++;
       }
-      
-      // Extract unique customers by phone number or name combination
-      const customerMap = new Map();
-      
+
+      // 3. Merge bills into customerMap using phone-first, then name fallback
       allBills.forEach(bill => {
-        // Use customer phone as primary key, fallback to name
-        const customerKey = bill.customer?.phone || bill.customer?.name || bill.customerName;
-        
-        if (!customerMap.has(customerKey)) {
-          customerMap.set(customerKey, {
+        const billPhone = bill.customer?.phone || bill.customerPhone || '';
+        const billName = bill.customer?.name || bill.customerName || '';
+        const billAmount = bill.summary?.total || bill.total || 0;
+
+        // Try to find an existing entry: by phone first, then by name
+        let existingEntry = null;
+        if (billPhone && customerMap.has(billPhone)) {
+          existingEntry = customerMap.get(billPhone);
+        } else if (billName && nameIndex.has(billName.toLowerCase())) {
+          existingEntry = nameIndex.get(billName.toLowerCase());
+        }
+
+        if (existingEntry) {
+          // Accumulate onto the existing (explicit) customer entry
+          existingEntry.totalSpent += billAmount;
+          existingEntry.billCount += 1;
+          if (bill.createdAt && new Date(bill.createdAt) > new Date(existingEntry.lastBillDate)) {
+            existingEntry.lastBillDate = bill.createdAt;
+          }
+        } else {
+          // No existing entry – create one from bill data
+          const customerKey = billPhone || billName;
+          if (!customerKey) return;
+
+          const newEntry = {
             id: bill.id,
-            customerName: bill.customer?.name || bill.customerName || 'Unknown',
-            customerPhone: bill.customer?.phone || bill.customerPhone || '',
+            customerName: billName || 'Unknown',
+            customerPhone: billPhone,
             customerEmail: bill.customer?.email || bill.customerEmail || '',
             customerGST: bill.customer?.gst || bill.customerGST || '',
             customerAddress: bill.customer?.address || bill.customerAddress || '',
             customerType: bill.customer?.type || bill.customerType || 'regular',
             vehicleName: bill.vehicle?.name || bill.vehicleName || '',
             vehicleNumber: bill.vehicle?.number || bill.vehicleNumber || '',
-            totalSpent: bill.summary?.total || bill.total || 0,
+            totalSpent: billAmount,
             billCount: 1,
             lastBillDate: bill.createdAt || new Date().toISOString()
-          });
-        } else {
-          const existing = customerMap.get(customerKey);
-          existing.totalSpent += (bill.summary?.total || bill.total || 0);
-          existing.billCount += 1;
-          
-          // Update last bill date if newer
-          if (bill.createdAt && new Date(bill.createdAt) > new Date(existing.lastBillDate)) {
-            existing.lastBillDate = bill.createdAt;
-          }
+          };
+          customerMap.set(customerKey, newEntry);
+          if (billName) nameIndex.set(billName.toLowerCase(), newEntry);
         }
       });
-      
+
+      // Deduplicate: customerMap values are already unique objects
       const customersList = Array.from(customerMap.values());
       setCustomers(customersList);
       setFilteredCustomers(customersList);
-      
+
     } catch (err) {
       setError(err.message);
       console.error('Error fetching customers:', err);
@@ -98,11 +250,12 @@ const CustomerDetailsPage = () => {
       setLoading(false);
     }
   };
-  
+
+
   // Filter customers based on search and filters
   useEffect(() => {
     let filtered = [...customers];
-    
+
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(customer =>
@@ -113,22 +266,22 @@ const CustomerDetailsPage = () => {
         (customer.customerGST && customer.customerGST.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
-    
+
     // Filter by customer type (only regular and internal)
     if (selectedCustomerType !== 'all') {
       filtered = filtered.filter(customer => customer.customerType === selectedCustomerType);
     }
-    
+
     setFilteredCustomers(filtered);
     setCurrentPage(1);
   }, [searchTerm, selectedCustomerType, customers]);
-  
+
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentCustomers = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
-  
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -138,47 +291,47 @@ const CustomerDetailsPage = () => {
       return 'Invalid Date';
     }
   };
-  
+
   const formatCurrency = (amount) => {
     if (!amount && amount !== 0) return '₹0.00';
     return `₹${amount.toFixed(2)}`;
   };
-  
+
   const handleViewCustomerBills = async (customer) => {
     setSelectedCustomer(customer);
     setShowBillModal(true);
     setLoadingBills(true);
-    
+
     try {
       // Fetch all bills for this customer
       let allBills = [];
       let page = 1;
       let hasMore = true;
-      
+
       while (hasMore) {
         const response = await fetch(`${API_BASE_URL}/billing/bills?page=${page}&per_page=100`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch bills');
         }
-        
+
         const data = await response.json();
-        
+
         // Filter bills for this customer by phone number or name
         const customerBillsData = data.bills.filter(bill => {
           const billPhone = bill.customer?.phone || bill.customerPhone;
           const billName = bill.customer?.name || bill.customerName;
-          
+
           return (billPhone && billPhone === customer.customerPhone) ||
-                 (billName && billName === customer.customerName);
+            (billName && billName === customer.customerName);
         });
-        
+
         allBills = [...allBills, ...customerBillsData];
-        
+
         hasMore = page < data.pages;
         page++;
       }
-      
+
       setCustomerBills(allBills);
     } catch (err) {
       console.error('Error fetching customer bills:', err);
@@ -187,13 +340,13 @@ const CustomerDetailsPage = () => {
       setLoadingBills(false);
     }
   };
-  
+
   const closeBillModal = () => {
     setShowBillModal(false);
     setSelectedCustomer(null);
     setCustomerBills([]);
   };
-  
+
   const getCustomerTypeBadgeStyle = (type) => {
     const styles = {
       regular: {
@@ -219,7 +372,7 @@ const CustomerDetailsPage = () => {
     };
     return styles[type] || styles.regular;
   };
-  
+
   const styles = {
     container: {
       minHeight: '100vh',
@@ -558,15 +711,15 @@ const CustomerDetailsPage = () => {
       borderRadius: '0 0 16px 16px'
     }
   };
-  
+
   if (loading) {
     return (
       <div style={styles.container}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ 
-              width: '60px', 
-              height: '60px', 
+            <div style={{
+              width: '60px',
+              height: '60px',
               border: '3px solid #334155',
               borderTopColor: '#3b82f6',
               borderRadius: '50%',
@@ -579,7 +732,7 @@ const CustomerDetailsPage = () => {
       </div>
     );
   }
-  
+
   return (
     <div style={styles.container}>
       <style>{`
@@ -622,14 +775,14 @@ const CustomerDetailsPage = () => {
           background: #475569;
         }
       `}</style>
-      
+
       <div style={styles.contentWrapper}>
         {/* Header */}
         <div style={styles.header}>
           <h1 style={styles.title}>Customer Management</h1>
           <p style={styles.subtitle}>View and manage all customer information and transaction history</p>
         </div>
-        
+
         {/* Filters - Fixed with flexbox to prevent overlap */}
         <div style={styles.filterCard}>
           <div style={styles.filterContainer}>
@@ -637,13 +790,13 @@ const CustomerDetailsPage = () => {
               <label style={styles.filterLabel}>🔍 Search Customer</label>
               <input
                 type="text"
-                placeholder="Search by name, phone, email, GST, or vehicle number..."
+                placeholder="Search by name, phone, email, GST..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={styles.filterInput}
               />
             </div>
-            
+
             <div style={styles.filterItem}>
               <label style={styles.filterLabel}>🏷️ Customer Type</label>
               <select
@@ -656,9 +809,25 @@ const CustomerDetailsPage = () => {
                 <option value="internal">Internal / Staff</option>
               </select>
             </div>
+
+            <div style={{ ...styles.filterItem, display: 'flex', alignItems: 'flex-end' }}>
+              <button
+                onClick={() => setShowAddCustomerModal(true)}
+                style={{
+                  ...styles.viewButton,
+                  padding: '12px 24px',
+                  height: '42px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                ➕ Add Customer
+              </button>
+            </div>
           </div>
         </div>
-        
+
         {/* Error Message */}
         {error && (
           <div style={styles.errorMessage}>
@@ -668,7 +837,7 @@ const CustomerDetailsPage = () => {
             </div>
           </div>
         )}
-        
+
         {/* Customers Table */}
         <div style={styles.tableCard}>
           <div style={{ overflowX: 'auto' }}>
@@ -680,7 +849,7 @@ const CustomerDetailsPage = () => {
                   <th style={styles.th}>Contact</th>
                   <th style={styles.th}>GST</th>
                   <th style={styles.th}>Type</th>
-                  <th style={styles.th}>Vehicle</th>
+
                   <th style={styles.th}>Total Spent</th>
                   <th style={styles.th}>Bills</th>
                   <th style={styles.th}>Last Bill</th>
@@ -702,8 +871,8 @@ const CustomerDetailsPage = () => {
                   currentCustomers.map((customer, index) => {
                     const serialNumber = indexOfFirstItem + index + 1;
                     return (
-                      <tr 
-                        key={index} 
+                      <tr
+                        key={index}
                         className="customer-row"
                         style={{ borderBottom: '1px solid #334155' }}
                       >
@@ -742,21 +911,10 @@ const CustomerDetailsPage = () => {
                         </td>
                         <td style={styles.td}>
                           <span style={getCustomerTypeBadgeStyle(customer.customerType)}>
-                            {customer.customerType === 'regular' ? 'Regular' : 'Internal'}
+                            {customer.customerType === 'regular' ? 'External Customer' : 'Internal Staff'}
                           </span>
                         </td>
-                        <td style={styles.td}>
-                          {customer.vehicleNumber ? (
-                            <>
-                              <div style={styles.vehicleInfo}>🚗 {customer.vehicleNumber}</div>
-                              {customer.vehicleName && (
-                                <div style={styles.vehicleName}>{customer.vehicleName}</div>
-                              )}
-                            </>
-                          ) : (
-                            <span style={{ color: '#64748b', fontSize: '12px' }}>—</span>
-                          )}
-                        </td>
+
                         <td style={styles.td}>
                           <span style={styles.totalSpent}>{formatCurrency(customer.totalSpent)}</span>
                         </td>
@@ -769,20 +927,58 @@ const CustomerDetailsPage = () => {
                           </div>
                         </td>
                         <td style={styles.td}>
-                          <button
-                            onClick={() => handleViewCustomerBills(customer)}
-                            style={styles.viewButton}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'translateY(-2px)';
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = 'none';
-                            }}
-                          >
-                            📋 View Bills
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => handleEditCustomer(customer)}
+                              style={{
+                                ...styles.viewButton,
+                                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.4)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.2)';
+                              }}
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => handleViewCustomerBills(customer)}
+                              style={styles.viewButton}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              📄 View Bills
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCustomer(customer)}
+                              style={{
+                                ...styles.viewButton,
+                                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.4)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.2)';
+                              }}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -791,7 +987,7 @@ const CustomerDetailsPage = () => {
               </tbody>
             </table>
           </div>
-          
+
           {/* Pagination */}
           {totalPages > 1 && (
             <div style={styles.paginationContainer}>
@@ -818,7 +1014,7 @@ const CustomerDetailsPage = () => {
                     } else {
                       pageNumber = currentPage - 2 + i;
                     }
-                    
+
                     return (
                       <button
                         key={i}
@@ -853,7 +1049,255 @@ const CustomerDetailsPage = () => {
           )}
         </div>
       </div>
-      
+
+      {/* Add Customer Modal */}
+      {showAddCustomerModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowAddCustomerModal(false)}>
+          <div style={{ ...styles.modalContent, width: '600px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <div>
+                <h2 style={styles.modalTitle}>Add New Customer</h2>
+                <p style={styles.modalSubtitle}>Enter customer details below</p>
+              </div>
+              <button
+                onClick={() => setShowAddCustomerModal(false)}
+                style={styles.closeButton}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#475569';
+                  e.currentTarget.style.color = '#ffffff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#334155';
+                  e.currentTarget.style.color = '#94a3b8';
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={styles.modalBody}>
+              <form onSubmit={handleAddCustomerSubmit}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={styles.filterLabel}>Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newCustomer.name}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                      style={styles.filterInput}
+                      placeholder="e.g. John Doe"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.filterLabel}>Phone Number *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newCustomer.phone}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                      style={styles.filterInput}
+                      placeholder="e.g. 9876543210"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.filterLabel}>Email Address</label>
+                    <input
+                      type="email"
+                      value={newCustomer.email}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                      style={styles.filterInput}
+                      placeholder="e.g. john@example.com"
+                    />
+                  </div>
+
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={styles.filterLabel}>Address</label>
+                    <input
+                      type="text"
+                      value={newCustomer.address}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                      style={styles.filterInput}
+                      placeholder="Full Address"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.filterLabel}>GST Number</label>
+                    <input
+                      type="text"
+                      value={newCustomer.gst}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, gst: e.target.value })}
+                      style={styles.filterInput}
+                      placeholder="GSTIN"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.filterLabel}>Customer Type</label>
+                    <select
+                      value={newCustomer.type}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, type: e.target.value })}
+                      style={styles.filterInput}
+                    >
+                      <option value="regular">External Customer</option>
+                      <option value="internal">Internal Staff</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCustomerModal(false)}
+                    style={{
+                      ...styles.paginationButton,
+                      background: 'transparent'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingCustomer}
+                    style={{
+                      ...styles.viewButton,
+                      opacity: submittingCustomer ? 0.7 : 1
+                    }}
+                  >
+                    {submittingCustomer ? 'Saving...' : 'Save Customer'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Customer Modal */}
+      {showEditCustomerModal && editingCustomer && (
+        <div style={styles.modalOverlay} onClick={() => setShowEditCustomerModal(false)}>
+          <div style={{ ...styles.modalContent, width: '600px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <div>
+                <h2 style={styles.modalTitle}>Edit Customer</h2>
+                <p style={styles.modalSubtitle}>Update customer details below</p>
+              </div>
+              <button
+                onClick={() => setShowEditCustomerModal(false)}
+                style={styles.closeButton}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#475569';
+                  e.currentTarget.style.color = '#ffffff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#334155';
+                  e.currentTarget.style.color = '#94a3b8';
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={styles.modalBody}>
+              <form onSubmit={handleEditCustomerSubmit}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={styles.filterLabel}>Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingCustomer.name}
+                      onChange={(e) => setEditingCustomer({ ...editingCustomer, name: e.target.value })}
+                      style={styles.filterInput}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.filterLabel}>Phone Number *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingCustomer.phone}
+                      onChange={(e) => setEditingCustomer({ ...editingCustomer, phone: e.target.value })}
+                      style={styles.filterInput}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.filterLabel}>Email Address</label>
+                    <input
+                      type="email"
+                      value={editingCustomer.email}
+                      onChange={(e) => setEditingCustomer({ ...editingCustomer, email: e.target.value })}
+                      style={styles.filterInput}
+                    />
+                  </div>
+
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={styles.filterLabel}>Address</label>
+                    <input
+                      type="text"
+                      value={editingCustomer.address}
+                      onChange={(e) => setEditingCustomer({ ...editingCustomer, address: e.target.value })}
+                      style={styles.filterInput}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.filterLabel}>GST Number</label>
+                    <input
+                      type="text"
+                      value={editingCustomer.gst}
+                      onChange={(e) => setEditingCustomer({ ...editingCustomer, gst: e.target.value })}
+                      style={styles.filterInput}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.filterLabel}>Customer Type</label>
+                    <select
+                      value={editingCustomer.type}
+                      onChange={(e) => setEditingCustomer({ ...editingCustomer, type: e.target.value })}
+                      style={styles.filterInput}
+                    >
+                      <option value="regular">External Customer</option>
+                      <option value="internal">Internal Staff</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditCustomerModal(false)}
+                    style={{
+                      ...styles.paginationButton,
+                      background: 'transparent'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingCustomer}
+                    style={{
+                      ...styles.viewButton,
+                      opacity: submittingCustomer ? 0.7 : 1
+                    }}
+                  >
+                    {submittingCustomer ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* Bill Details Modal */}
       {showBillModal && selectedCustomer && (
         <div style={styles.modalOverlay} onClick={closeBillModal}>
@@ -883,13 +1327,13 @@ const CustomerDetailsPage = () => {
                 ✕
               </button>
             </div>
-            
+
             <div style={styles.modalBody}>
               {loadingBills ? (
                 <div style={{ textAlign: 'center', padding: '60px' }}>
-                  <div style={{ 
-                    width: '50px', 
-                    height: '50px', 
+                  <div style={{
+                    width: '50px',
+                    height: '50px',
                     border: '3px solid #334155',
                     borderTopColor: '#3b82f6',
                     borderRadius: '50%',
@@ -913,9 +1357,8 @@ const CustomerDetailsPage = () => {
                           <th style={styles.billsTh}>Bill ID</th>
                           <th style={styles.billsTh}>Bill Number</th>
                           <th style={styles.billsTh}>Date</th>
-                          <th style={styles.billsTh}>Vehicle</th>
-                          <th style={styles.billsTh}>Total</th>
-                          <th style={styles.billsTh}>Status</th>
+                          <th style={{ ...styles.billsTh, textAlign: 'right' }}>Total</th>
+                          <th style={{ ...styles.billsTh, textAlign: 'center' }}>Status</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -927,20 +1370,16 @@ const CustomerDetailsPage = () => {
                             </td>
                             <td style={styles.billsTd}>{bill.billNumber || 'N/A'}</td>
                             <td style={styles.billsTd}>{formatDate(bill.createdAt)}</td>
-                            <td style={styles.billsTd}>
-                              {bill.vehicle?.number || bill.vehicleNumber || '—'}
-                              {bill.vehicle?.name && ` (${bill.vehicle.name})`}
-                            </td>
                             <td style={{ ...styles.billsTd, fontWeight: '700', color: '#10b981', textAlign: 'right' }}>
                               {formatCurrency(bill.summary?.total || bill.total || 0)}
                             </td>
-                            <td style={styles.billsTd}>
+                            <td style={{ ...styles.billsTd, textAlign: 'center' }}>
                               <span style={{
                                 ...styles.paymentBadge,
                                 ...((bill.payment?.status || bill.paymentStatus) === 'paid' ? styles.paymentPaid :
-                                   (bill.payment?.status || bill.paymentStatus) === 'partial' ? styles.paymentPartial : styles.paymentPending)
+                                  (bill.payment?.status || bill.paymentStatus) === 'partial' ? styles.paymentPartial : styles.paymentPending)
                               }}>
-                                {((bill.payment?.status || bill.paymentStatus || 'pending').charAt(0).toUpperCase() + 
+                                {((bill.payment?.status || bill.paymentStatus || 'pending').charAt(0).toUpperCase() +
                                   (bill.payment?.status || bill.paymentStatus || 'pending').slice(1))}
                               </span>
                             </td>
@@ -949,12 +1388,12 @@ const CustomerDetailsPage = () => {
                       </tbody>
                     </table>
                   </div>
-                  
+
                   <div style={styles.totalFooter}>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '14px', color: '#94a3b8' }}>Total Spent:</span>
                       <span style={{ fontSize: '22px', fontWeight: '700', color: '#10b981' }}>
-                        {formatCurrency(selectedCustomer.totalSpent)}
+                        {formatCurrency(customerBills.reduce((sum, bill) => sum + (bill.summary?.total || bill.total || 0), 0))}
                       </span>
                     </div>
                   </div>
