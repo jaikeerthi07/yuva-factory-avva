@@ -193,6 +193,24 @@ def get_customer_by_phone(phone_number):
         if not phone_number:
             return jsonify({"error": "Phone number is required"}), 400
         
+        from app.models.customer import Customer
+        
+        # Check explicit Customer table first
+        explicit_customer = Customer.query.filter_by(phone=phone_number).first()
+        
+        if explicit_customer:
+            return jsonify({
+                'exists': True,
+                'customer': {
+                    'name': explicit_customer.name,
+                    'phone': explicit_customer.phone,
+                    'email': explicit_customer.email or '',
+                    'gst': explicit_customer.gst or '',
+                    'address': explicit_customer.address or '',
+                    'type': explicit_customer.type or 'regular'
+                }
+            }), 200
+
         # Find existing bills with this phone number (get the most recent)
         existing_customer = Bill.query.filter_by(customer_phone=phone_number).order_by(Bill.created_at.desc()).first()
         
