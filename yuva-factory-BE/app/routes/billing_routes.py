@@ -13,6 +13,70 @@ from dateutil.relativedelta import relativedelta  # Add this import for warranty
 
 billing_bp = Blueprint("billing_bp", __name__)
 
+# ------------------ GSTR-1 REPORT GENERATION ------------------
+import csv
+import io
+
+@billing_bp.route("/billing/gstr1-report", methods=["GET"])
+def generate_gstr1_report():
+    """Generate GSTR-1 report for a given date range (JSON or CSV)"""
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        export = request.args.get('export', 'json')  # 'json' or 'csv'
+        if not start_date or not end_date:
+            return jsonify({"error": "start_date and end_date required (YYYY-MM-DD)"}), 400
+        start_dt = datetime.fromisoformat(start_date)
+        end_dt = datetime.fromisoformat(end_date)
+
+        # Query all bills in date range with GST info
+        bills = Bill.query.filter(
+            Bill.created_at >= start_dt,
+            Bill.created_at <= end_dt,
+            Bill.customer_gst != None,
+            Bill.customer_gst != ''
+        ).all()
+
+        # Prepare GSTR-1 data (B2B, B2C, etc.)
+        gstr1_data = []
+        for bill in bills:
+            for item in bill.items:
+                gstr1_data.append({
+                    'Invoice Number': bill.bill_number,
+                    'Invoice Date': bill.created_at.strftime('%Y-%m-%d'),
+                    'Customer Name': bill.customer_name,
+                    'Customer GSTIN': bill.customer_gst,
+                    'Invoice Value': round(bill.total, 2),
+                    'Place Of Supply': bill.company_city or '',
+                    'Reverse Charge': 'N',
+                    'Invoice Type': 'Regular',
+                    'E-Commerce GSTIN': '',
+                    'Rate': round(bill.tax, 2),
+                    'Taxable Value': round(item.total, 2),
+                    'HSN/SAC': '',  # Add HSN if available
+                    'Description': item.product_name,
+                    'Qty': item.quantity,
+                    'Unit': '',
+                    'Total Tax': round((item.total * bill.tax / 100) if bill.tax else 0, 2),
+                })
+
+        if export == 'csv':
+            # Generate CSV
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=gstr1_data[0].keys() if gstr1_data else [])
+            writer.writeheader()
+            writer.writerows(gstr1_data)
+            response = make_response(output.getvalue())
+            response.headers["Content-Disposition"] = "attachment; filename=gstr1_report.csv"
+            response.headers["Content-type"] = "text/csv"
+            return response
+        else:
+            return jsonify(gstr1_data), 200
+    except Exception as e:
+        print(f"GSTR-1 report error: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({"error": "Failed to generate GSTR-1 report"}), 400
+
 def generate_unique_bill_number():
     """Generate a unique random bill number"""
     while True:
@@ -129,6 +193,24 @@ def get_customer_by_phone(phone_number):
         if not phone_number:
             return jsonify({"error": "Phone number is required"}), 400
         
+        from app.models.customer import Customer
+        
+        # Check explicit Customer table first
+        explicit_customer = Customer.query.filter_by(phone=phone_number).first()
+        
+        if explicit_customer:
+            return jsonify({
+                'exists': True,
+                'customer': {
+                    'name': explicit_customer.name,
+                    'phone': explicit_customer.phone,
+                    'email': explicit_customer.email or '',
+                    'gst': explicit_customer.gst or '',
+                    'address': explicit_customer.address or '',
+                    'type': explicit_customer.type or 'regular'
+                }
+            }), 200
+
         # Find existing bills with this phone number (get the most recent)
         existing_customer = Bill.query.filter_by(customer_phone=phone_number).order_by(Bill.created_at.desc()).first()
         

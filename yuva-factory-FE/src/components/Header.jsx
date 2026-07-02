@@ -256,7 +256,14 @@ const Header = ({ toggleSidebar }) => {
         {/* User */}
         <div style={styles.userSection}>
           <FaUserCircle />
-          <span style={styles.username}>{user?.full_name || user?.name || user?.username || "Admin"}</span>
+          <span style={styles.username}>
+            {(() => {
+              const name = user?.full_name || user?.name || user?.username;
+              if (name && name.toLowerCase() !== "username") return name;
+              if (user?.email) return user.email.split('@')[0];
+              return "Admin";
+            })()}
+          </span>
         </div>
 
         {/* Logout */}

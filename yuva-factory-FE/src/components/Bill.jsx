@@ -79,6 +79,7 @@ const Bill = () => {
   const [fetchingCustomer, setFetchingCustomer] = useState(false);
   const [logoDataUrl, setLogoDataUrl] = useState('');
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [availableCustomers, setAvailableCustomers] = useState([]);
 
   // Shop details (will be overridden by selected company)
   const defaultShopDetails = {
@@ -951,6 +952,21 @@ const Bill = () => {
       color: '#64748b',
     },
   };
+  // Fetch explicit customers for autocomplete
+  const fetchAvailableCustomers = async () => {
+    try {
+      const response = await api.get('/customers');
+      if (response.data && response.data.customers) {
+        setAvailableCustomers(response.data.customers);
+      }
+    } catch (err) {
+      console.error('Error fetching available customers:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAvailableCustomers();
+  }, []);
 
   // Check authentication on mount
   useEffect(() => {
@@ -1473,7 +1489,7 @@ const Bill = () => {
         setCustomerEmail(customer.email || '');
         setCustomerAddress(customer.address || '');
         setCustomerGST(customer.gst || '');
-        setCustomerType(customer.type || 'external');
+        setCustomerType(customer.type === 'regular' ? 'external' : (customer.type || 'external'));
         setSuccess('Customer found! Details auto-filled.');
         setTimeout(() => setSuccess(''), 3000);
       }
@@ -3364,9 +3380,30 @@ billTableHeader: {
                 type="text"
                 style={styles.customerInput}
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  setCustomerName(newName);
+                  
+                  // Check if name matches an available customer
+                  const matchedCustomer = availableCustomers.find(c => c.name && c.name.toLowerCase() === newName.toLowerCase());
+                  if (matchedCustomer) {
+                    setCustomerPhone(matchedCustomer.phone || '');
+                    setCustomerEmail(matchedCustomer.email || '');
+                    setCustomerAddress(matchedCustomer.address || '');
+                    setCustomerGST(matchedCustomer.gst || '');
+                    setCustomerType(matchedCustomer.type === 'regular' ? 'external' : (matchedCustomer.type || 'external'));
+                    setSuccess('Customer found! Details auto-filled.');
+                    setTimeout(() => setSuccess(''), 3000);
+                  }
+                }}
                 placeholder="Customer Name"
+                list="customer-names"
               />
+              <datalist id="customer-names">
+                {availableCustomers.map(c => (
+                  <option key={c.id} value={c.name} />
+                ))}
+              </datalist>
               
               <input
                 type="text"

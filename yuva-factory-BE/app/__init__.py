@@ -51,6 +51,7 @@ def create_app():
     from app.routes.payment_routes import payment_tracking_bp
     from app.routes.raw_material_routes import raw_material_bp
     from app.routes.gstrreport_routes import gstrreports_bp
+    from app.routes.customer_routes import customer_bp
 
     app.register_blueprint(login_bp, url_prefix="/api")
     app.register_blueprint(product_bp, url_prefix="/api")
@@ -58,6 +59,7 @@ def create_app():
     app.register_blueprint(supplier_bp)
     app.register_blueprint(quotation_bp, url_prefix='/api')
     app.register_blueprint(invoice_bp, url_prefix='/api')
+    app.register_blueprint(customer_bp, url_prefix='/api')
     app.register_blueprint(service_bp)
     app.register_blueprint(user_type_bp)
     app.register_blueprint(employee_bp,url_prefix="/api")

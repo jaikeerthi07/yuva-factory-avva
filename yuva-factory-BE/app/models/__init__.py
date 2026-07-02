@@ -11,6 +11,7 @@ from app.models.supplier import Supplier, Item
 from app.models.usertype import UserType
 from app.models.enquiry import Enquiry
 from app.models.raw_material import RawMaterial
+from app.models.customer import Customer
 
 __all__ = [
     'Attendance',
@@ -33,4 +34,5 @@ __all__ = [
     'UserType',
     'Enquiry',
     'RawMaterial',
+    'Customer',
 ]
