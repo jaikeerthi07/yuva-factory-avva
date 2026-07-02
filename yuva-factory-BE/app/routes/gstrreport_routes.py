@@ -105,8 +105,8 @@ def get_b2b():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
-
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
     if not bill:
      return jsonify({
         'success': True,
@@ -115,7 +115,6 @@ def get_b2b():
     data=[]
     for bills in bill:
 
-      print(bills.bill_number)  # value example
       # applicaple_tax=bills.subtotal- bills.discount
       taxable=bills.subtotal- bills.discount
       applicaple_tax=taxable * 5/100
@@ -162,7 +161,8 @@ def get_b2c1():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
 
     if not bill:
      return jsonify({
@@ -171,8 +171,9 @@ def get_b2c1():
         }), 200
     data=[]
     for bills in bill:
-
-      print(bills.bill_number)  # value example
+      place_supply = get_place_supply(
+      bills.customer_address
+      )
       # applicaple_tax=bills.subtotal- bills.discount
       taxable=bills.subtotal- bills.discount
       applicaple_tax=taxable * 5/100
@@ -180,7 +181,7 @@ def get_b2c1():
                 "invoice_no": bills.bill_number,
                 "invoice_date":  bills.created_at,
                 "invoice_value": bills.total,
-                "place_supply": "",
+                "place_supply": place_supply,
                 "rate":"5",
                 "applicable_tax":applicaple_tax,
                 "taxable_value": taxable,
@@ -212,7 +213,8 @@ def get_b2cs():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
 
     if not bill:
      return jsonify({
@@ -221,14 +223,15 @@ def get_b2cs():
         }), 200
     data=[]
     for bills in bill:
-
-      print(bills.bill_number)  # value example
+      place_supply = get_place_supply(
+      bills.customer_address
+      )
       # applicaple_tax=bills.subtotal- bills.discount
       taxable=bills.subtotal- bills.discount
       applicaple_tax=taxable * 5/100
       data.append({
                 "type": bills.customer_type,
-                "place_supply": "",
+                "place_supply": place_supply,
                 "rate":"5",
                 "applicable_tax": applicaple_tax,
                 "taxable_value": taxable,
@@ -259,7 +262,8 @@ def get_cdnr():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
 
     if not bill:
      return jsonify({
@@ -268,8 +272,9 @@ def get_cdnr():
         }), 200
     data=[]
     for bills in bill:
-
-      print(bills.bill_number)  # value example
+      place_supply = get_place_supply(
+        bills.customer_address
+        )
       # applicaple_tax=bills.subtotal- bills.discount
       taxable=bills.subtotal- bills.discount
       applicaple_tax=taxable * 5/100
@@ -279,7 +284,7 @@ def get_cdnr():
                 "note_no": bills.bill_number,
                 "note_date": bills.created_at ,
                 "note_type": 'Regular B2B',
-                "place_supply": "",
+                "place_supply": place_supply,
                 "reverse_charge": "N",
                 "note_supply_type":"",
                 "note_value":bills.total,
@@ -313,7 +318,8 @@ def get_cdnur():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
 
     if not bill:
      return jsonify({
@@ -322,8 +328,9 @@ def get_cdnur():
         }), 200
     data=[]
     for bills in bill:
-
-      print(bills.bill_number)  # value example
+      place_supply = get_place_supply(
+        bills.customer_address
+        )
       # applicaple_tax=bills.subtotal- bills.discount
       taxable=bills.subtotal- bills.discount
       applicaple_tax=taxable * 5/100 
@@ -332,7 +339,7 @@ def get_cdnur():
                 "note_no":  bills.bill_number,
                 "note_date": bills.created_at ,
                 "note_type": 'Regular B2B',
-                "place_supply": "",
+                "place_supply": place_supply,
                 "note_value":bills.total,
                 "applicable_tax": applicaple_tax,
                 "rate": "5",
@@ -363,7 +370,8 @@ def get_exp():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
 
     if not bill:
      return jsonify({
@@ -373,7 +381,6 @@ def get_exp():
     data=[]
     for bills in bill:
 
-      print(bills.bill_number)  # value example
       # applicaple_tax=bills.subtotal- bills.discount
       taxable=bills.subtotal- bills.discount
       applicaple_tax=taxable * 5/100 
@@ -414,7 +421,8 @@ def get_at():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
 
     if not bill:
      return jsonify({
@@ -423,13 +431,14 @@ def get_at():
         }), 200
     data=[]
     for bills in bill:
-
-      print(bills.bill_number)  # value example
+      place_supply = get_place_supply(
+        bills.customer_address
+        )
       # applicaple_tax=bills.subtotal- bills.discount
       taxable=bills.subtotal- bills.discount
       applicaple_tax=taxable * 5/100 
       data.append({
-                "place_supply": "",
+                "place_supply": place_supply,
                 "rate": "5",
                 "applicable_tax": applicaple_tax,
                 "gross_adv_recive": "",
@@ -459,7 +468,9 @@ def get_exemp():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
+
     if not bill:
      return jsonify({
         'success': True,
@@ -468,7 +479,6 @@ def get_exemp():
     data=[]
     for bills in bill:
 
-      print(bills.bill_number)  # value example
     
       data.append({
                 "description": "",
@@ -500,7 +510,8 @@ def get_hsn():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
 
     if not bill:
      return jsonify({
@@ -510,7 +521,6 @@ def get_hsn():
     data=[]
     for bills in bill:
 
-      print(bills.bill_number)  # value example
       items = BillItem.query.filter_by(bill_id=bills.id).all()
       taxable=bills.subtotal- bills.discount
       for item in items: 
@@ -553,7 +563,9 @@ def get_docs():
     func.date(Bill.created_at).between(from_date, to_date)
  )
         # Get all suppliers
-    bill = query.order_by(Bill.id).all()
+    # bill = query.order_by(Bill.id).all()
+    bill = query.order_by(Bill.id).yield_per(1000)
+
     if not bill:
      return jsonify({
         'success': True,
@@ -562,7 +574,6 @@ def get_docs():
     data=[]
     for bills in bill:
 
-      print(bills.bill_number)  # value example
     
       data.append({
                 "nature_of_doc": "",
