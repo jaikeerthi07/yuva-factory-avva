@@ -104,15 +104,14 @@ const CustomerDetailsPage = () => {
   };
 
   const handleDeleteCustomer = async (customer) => {
-    if (!customer.customerPhone) {
-      alert('Cannot delete a customer without a phone number (bill-only record).');
-      return;
-    }
-    const confirmed = window.confirm(`Are you sure you want to delete this customer?\n\n"${customer.customerName}"`);
+    const confirmed = window.confirm(`Are you sure you want to delete this customer AND all their associated bills?\n\n"${customer.customerName}"\n\nWarning: This action cannot be undone!`);
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/customers/${encodeURIComponent(customer.customerPhone)}`, {
+      const phoneParam = customer.customerPhone ? encodeURIComponent(customer.customerPhone) : 'no-phone';
+      const nameParam = customer.customerName ? `?name=${encodeURIComponent(customer.customerName)}` : '';
+      
+      const response = await fetch(`${API_BASE_URL}/customers/${phoneParam}${nameParam}`, {
         method: 'DELETE'
       });
       if (!response.ok) {
@@ -527,15 +526,16 @@ const CustomerDetailsPage = () => {
       background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
       border: 'none',
       cursor: 'pointer',
-      fontSize: '13px',
-      padding: '8px 16px',
-      borderRadius: '10px',
+      fontSize: '12px',
+      padding: '6px 12px',
+      borderRadius: '8px',
       color: '#ffffff',
       fontWeight: '500',
       display: 'inline-flex',
       alignItems: 'center',
       gap: '6px',
-      transition: 'all 0.2s ease'
+      transition: 'all 0.2s ease',
+      whiteSpace: 'nowrap'
     },
     paginationContainer: {
       background: '#0f172a',
@@ -853,7 +853,7 @@ const CustomerDetailsPage = () => {
                   <th style={styles.th}>Total Spent</th>
                   <th style={styles.th}>Bills</th>
                   <th style={styles.th}>Last Bill</th>
-                  <th style={styles.th}>Actions</th>
+                  <th style={{ ...styles.th, textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -927,21 +927,12 @@ const CustomerDetailsPage = () => {
                           </div>
                         </td>
                         <td style={styles.td}>
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'center' }}>
                             <button
                               onClick={() => handleEditCustomer(customer)}
                               style={{
                                 ...styles.viewButton,
-                                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.4)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.2)';
+                                background: 'linear-gradient(135deg, #f59e0b, #d97706)'
                               }}
                             >
                               ✏️ Edit
@@ -949,14 +940,6 @@ const CustomerDetailsPage = () => {
                             <button
                               onClick={() => handleViewCustomerBills(customer)}
                               style={styles.viewButton}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = 'none';
-                              }}
                             >
                               📄 View Bills
                             </button>
@@ -964,16 +947,7 @@ const CustomerDetailsPage = () => {
                               onClick={() => handleDeleteCustomer(customer)}
                               style={{
                                 ...styles.viewButton,
-                                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.4)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.2)';
+                                background: 'linear-gradient(135deg, #ef4444, #dc2626)'
                               }}
                             >
                               🗑️ Delete
@@ -1095,10 +1069,15 @@ const CustomerDetailsPage = () => {
                     <input
                       type="text"
                       required
+                      maxLength="10"
                       value={newCustomer.phone}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value.replace(/\D/g, '') })}
+                      onInvalid={(e) => e.target.setCustomValidity('Mobile number should be 10 digits.')}
+                      onInput={(e) => e.target.setCustomValidity('')}
                       style={styles.filterInput}
                       placeholder="e.g. 9876543210"
+                      pattern="[0-9]{10}"
+                      title="Mobile number should be 10 digits."
                     />
                   </div>
 
@@ -1109,7 +1088,9 @@ const CustomerDetailsPage = () => {
                       value={newCustomer.email}
                       onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
                       style={styles.filterInput}
-                      placeholder="e.g. john@example.com"
+                      placeholder="e.g. john@gmail.com"
+                      pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                      title="Please enter a valid email address containing @"
                     />
                   </div>
 
@@ -1128,10 +1109,13 @@ const CustomerDetailsPage = () => {
                     <label style={styles.filterLabel}>GST Number</label>
                     <input
                       type="text"
+                      maxLength="15"
                       value={newCustomer.gst}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, gst: e.target.value })}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, gst: e.target.value.toUpperCase() })}
                       style={styles.filterInput}
                       placeholder="GSTIN"
+                      pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+                      title="Please enter a valid 15-character GST number (e.g., 22AAAAA0000A1Z5)"
                     />
                   </div>
 
@@ -1223,6 +1207,8 @@ const CustomerDetailsPage = () => {
                       value={editingCustomer.phone}
                       onChange={(e) => setEditingCustomer({ ...editingCustomer, phone: e.target.value })}
                       style={styles.filterInput}
+                      pattern="[0-9]{10}"
+                      title="Please enter a valid 10-digit phone number"
                     />
                   </div>
 
@@ -1233,6 +1219,8 @@ const CustomerDetailsPage = () => {
                       value={editingCustomer.email}
                       onChange={(e) => setEditingCustomer({ ...editingCustomer, email: e.target.value })}
                       style={styles.filterInput}
+                      pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                      title="Please enter a valid email address containing @"
                     />
                   </div>
 
@@ -1251,8 +1239,10 @@ const CustomerDetailsPage = () => {
                     <input
                       type="text"
                       value={editingCustomer.gst}
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, gst: e.target.value })}
+                      onChange={(e) => setEditingCustomer({ ...editingCustomer, gst: e.target.value.toUpperCase() })}
                       style={styles.filterInput}
+                      pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+                      title="Please enter a valid 15-character GST number (e.g., 22AAAAA0000A1Z5)"
                     />
                   </div>
 
