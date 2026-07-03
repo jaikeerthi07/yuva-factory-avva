@@ -33,7 +33,7 @@ def add_customer():
             email=email,
             address=address,
             gst=gst,
-            type=customer_type
+            customer_type=customer_type
         )
 
         db.session.add(new_customer)
@@ -90,7 +90,7 @@ def update_customer(phone):
             customer.email = email
             customer.address = address
             customer.gst = gst
-            customer.type = customer_type
+            customer.customer_type = customer_type
         else:
             # Create new customer if it didn't exist explicitly
             customer = Customer(
@@ -99,7 +99,7 @@ def update_customer(phone):
                 email=email,
                 address=address,
                 gst=gst,
-                type=customer_type
+                customer_type=customer_type
             )
             db.session.add(customer)
 
@@ -117,14 +117,37 @@ def update_customer(phone):
 @customer_bp.route("/customers/<string:phone>", methods=["DELETE"])
 def delete_customer(phone):
     try:
-        customer = Customer.query.filter_by(phone=phone).first()
-        if not customer:
+        from app.models.billing import Bill
+        
+        customer_deleted = False
+        if phone == 'no-phone':
+            name = request.args.get('name')
+            if not name:
+                return jsonify({"error": "Name is required when phone is missing"}), 400
+            # Find bills by name where phone is null or empty
+            bills = Bill.query.filter((Bill.customer_phone == None) | (Bill.customer_phone == '')).filter(Bill.customer_name == name).all()
+        else:
+            customer = Customer.query.filter_by(phone=phone).first()
+            if customer:
+                db.session.delete(customer)
+                customer_deleted = True
+            # Delete all bills associated with this phone
+            bills = Bill.query.filter_by(customer_phone=phone).all()
+            
+        bills_deleted = len(bills)
+        if bills_deleted > 0:
+            from app.models.billing import Payment
+            for bill in bills:
+                # Manually delete payments to avoid IntegrityError (cascade missing)
+                Payment.query.filter_by(bill_id=bill.id).delete()
+                db.session.delete(bill)
+
+        if not customer_deleted and bills_deleted == 0:
             return jsonify({"error": "Customer not found"}), 404
 
-        db.session.delete(customer)
         db.session.commit()
 
-        return jsonify({"message": "Customer deleted successfully"}), 200
+        return jsonify({"message": f"Customer and {bills_deleted} associated bills deleted successfully"}), 200
 
     except Exception as e:
         db.session.rollback()
