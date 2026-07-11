@@ -50,30 +50,48 @@ def create_product():
         if errors:
             return jsonify({"errors": errors}), 400
 
-        # Handle watts properly
-        watts = None
-        if data.get('watts'):
-            try:
-                watts = float(data['watts'])
-            except (TypeError, ValueError):
-                watts = data['watts']  # Keep as string if not float
+        # Handle watts/hsn properly (store as string for consistency)
+        raw_watts = data.get('watts') or data.get('hsn') or ''
+        watts = str(raw_watts).strip() if raw_watts else None
 
-        product = Product(
-            name=data.get("name", "").strip(),
-            model=data.get("model", "").strip(),
-            type=data.get("type", "").strip(),
+        model_val = data.get("model", data.get("Model", "")).strip()
+        type_val = data.get("type", data.get("Type", "")).strip()
+        name_val = data.get("name", "").strip()
+        buy_price_val = float(data.get("buyPrice", 0))
+
+        # Check if product already exists
+        existing_product = Product.query.filter_by(
+            name=name_val,
+            model=model_val,
+            type=type_val,
             watts=watts,
-            buy_price=float(data.get("buyPrice", 0)),
-            sell_price=float(data.get("sellPrice", 0)),
-            quantity=int(data.get("quantity", 0)),  # Changed to int
-        )
+            buy_price=buy_price_val
+        ).first()
 
-        product.calculate_values()
+        if existing_product:
+            existing_product.quantity += int(data.get("quantity", 0))
+            # If sell price is different, we can optionally update it or keep old one.
+            # We'll keep the old one but calculate values based on new quantity.
+            existing_product.calculate_values()
+            db.session.commit()
+            return jsonify(existing_product.to_dict()), 200
+        else:
+            product = Product(
+                name=name_val,
+                model=model_val,
+                type=type_val,
+                watts=watts,
+                buy_price=buy_price_val,
+                sell_price=float(data.get("sellPrice", 0)),
+                quantity=int(data.get("quantity", 0)),
+            )
 
-        db.session.add(product)
-        db.session.commit()
+            product.calculate_values()
 
-        return jsonify(product.to_dict()), 201
+            db.session.add(product)
+            db.session.commit()
+
+            return jsonify(product.to_dict()), 201
 
     except Exception as e:
         db.session.rollback()

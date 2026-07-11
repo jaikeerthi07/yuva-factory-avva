@@ -753,6 +753,14 @@ def create_item(supplier_id):
         print(f"Creating item: {new_item.name}, price: {new_item.buy_price}, status: {new_item.status}, quantity: {new_item.quantity}, attachment: {new_item.attachment}")
 
         db.session.add(new_item)
+        db.session.flush()  # flush to get the new_item.id before commit
+
+        # Accumulate total purchase amount on supplier level
+        supplier_obj = Supplier.query.get(supplier_id)
+        if supplier_obj:
+            item_value = float(data['buy_price']) * int(data.get('quantity', 0))
+            supplier_obj.total_purchase_amount = (supplier_obj.total_purchase_amount or 0) + item_value
+
         db.session.commit()
 
         print(f"✅ Item created with ID: {new_item.id}")

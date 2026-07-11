@@ -13,6 +13,7 @@ class Supplier(db.Model):
     address = db.Column(db.Text)
     gst = db.Column(db.String(15), nullable=True)
     hsn_code = db.Column(db.String(20), nullable=True)  # <-- Added HSN code
+    total_purchase_amount = db.Column(db.Float, default=0.0, nullable=False)  # Cumulative purchase total
     created_by = db.Column(db.Integer, db.ForeignKey('login.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -34,6 +35,7 @@ class Supplier(db.Model):
             'hsn_code': self.hsn_code,  # <-- Added HSN code to dict
             'gst_number': self.gst,
             'gstNumber': self.gst,
+            'total_purchase_amount': float(self.total_purchase_amount or 0),
             'created_by': self.created_by,
             'items': [item.to_dict() for item in self.items] if self.items else [],
             'created_at': self.created_at.isoformat() if self.created_at else None,

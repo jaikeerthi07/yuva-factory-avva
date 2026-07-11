@@ -7,6 +7,8 @@ from sqlalchemy import func
 
 import re
 import requests
+pincode_cache = {}
+
 def get_place_supply(address):
 
     if not address:
@@ -64,25 +66,32 @@ def get_place_supply(address):
 
     pincode = pincode_match.group()
 
+    if pincode in pincode_cache:
+        return pincode_cache[pincode]
+
     url = f"https://api.postalpincode.in/pincode/{pincode}"
 
     headers = {
       "User-Agent": "Mozilla/5.0"
     }
 
-    response = requests.get(
-    url,
-    headers=headers,
-    timeout=10
-    )
-    data = response.json()
+    try:
+        response = requests.get(
+        url,
+        headers=headers,
+        timeout=5
+        )
+        data = response.json()
 
-    if data[0]["Status"] == "Success":
-
-     state = data[0]["PostOffice"][0]["State"]
-
-     return state_code_map.get(state, "")
+        if data and data[0]["Status"] == "Success":
+            state = data[0]["PostOffice"][0]["State"]
+            result = state_code_map.get(state, "")
+            pincode_cache[pincode] = result
+            return result
+    except Exception:
+        pass
     
+    pincode_cache[pincode] = ""
     return ""
 
    

@@ -6,7 +6,7 @@ from datetime import timedelta
 pymysql.install_as_MySQLdb()
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:root123@localhost/Yuva_factory'
+    SQLALCHEMY_DATABASE_URI = 'mysql://root:root123@localhost/Yuva_factory'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # File upload configuration

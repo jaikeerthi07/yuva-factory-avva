@@ -38,6 +38,7 @@ def get_suppliers_with_items():
                 'email': supplier.email,
                 'phone': supplier.phone,
                 'address': supplier.address,
+                'total_purchase_amount': getattr(supplier, 'total_purchase_amount', 0),
                 'created_at': supplier.created_at.isoformat() if supplier.created_at else None,
                 'items': [{
                     'id': item.id,
