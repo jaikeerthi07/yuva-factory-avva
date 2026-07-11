@@ -390,13 +390,27 @@ const Bill = () => {
       color: '#10b981',
     },
     itemQuantity: {
-      width: '80px',
+      width: '60px',
       padding: '8px',
       border: '1px solid #e2e8f0',
       borderRadius: '8px',
       textAlign: 'center',
       fontFamily: 'inherit',
       fontSize: '14px',
+    },
+    qtyBtn: {
+      width: '32px',
+      height: '32px',
+      borderRadius: '8px',
+      border: '1px solid #e2e8f0',
+      background: '#f8fafc',
+      color: '#475569',
+      fontSize: '16px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontWeight: 'bold',
     },
     removeBtn: {
       background: '#ef4444',
@@ -3219,14 +3233,27 @@ billTableHeader: {
                       )}
                     </div>
                     <div style={styles.itemPrice}>₹{product.sellPrice}</div>
-                    <input
-                      type="number"
-                      style={styles.itemQuantity}
-                      value={product.quantity}
-                      min="0"
-                      max={product.maxQuantity}
-                      onChange={(e) => updateQuantity(product.id, product.source || 'product', e.target.value)}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <button 
+                        style={styles.qtyBtn}
+                        onClick={() => updateQuantity(product.id, product.source || 'product', Math.max(0, product.quantity - 1))}
+                      >-</button>
+                      <input
+                        type="number"
+                        style={styles.itemQuantity}
+                        value={product.quantity}
+                        min="0"
+                        max={product.maxQuantity}
+                        onChange={(e) => updateQuantity(product.id, product.source || 'product', e.target.value)}
+                      />
+                      <button 
+                        style={styles.qtyBtn}
+                        onClick={() => updateQuantity(product.id, product.source || 'product', product.quantity + 1)}
+                        disabled={product.maxQuantity ? product.quantity >= product.maxQuantity : false}
+                        title={product.maxQuantity && product.quantity >= product.maxQuantity ? "Maximum stock reached" : ""}
+                        style={{...styles.qtyBtn, opacity: (product.maxQuantity && product.quantity >= product.maxQuantity) ? 0.5 : 1}}
+                      >+</button>
+                    </div>
                     <div style={styles.itemTotal}>₹{product.total.toFixed(2)}</div>
                     <button
                       style={styles.removeBtn}

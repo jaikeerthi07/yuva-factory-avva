@@ -72,21 +72,7 @@ export default function ItemsPage() {
     }
   }, [message]);
 
-  // Check for pending supply items on component mount and periodically
-  useEffect(() => {
-    // Initial check with a small delay to ensure component is ready
-    const initialCheck = setTimeout(() => {
-      checkAndProcessPendingSupplies();
-    }, 1000);
 
-    // Check every 30 seconds for new pending supplies
-    const interval = setInterval(checkAndProcessPendingSupplies, 30000);
-
-    return () => {
-      clearTimeout(initialCheck);
-      clearInterval(interval);
-    };
-  }, []);
 
   const showMessage = (type, text) => {
     setMessage({ type, text });
@@ -135,191 +121,83 @@ export default function ItemsPage() {
     }
   };
 
-  // ================= AUTO-PROCESS PENDING SUPPLIES =================
-  const checkAndProcessPendingSupplies = async () => {
-    // Prevent concurrent processing
-    if (isProcessing.current) {
-      console.log("Already processing supplies, skipping...");
-      return;
-    }
+  // ================= RAW MATERIALS IMPORT =================
+  const [showRawMaterialsModal, setShowRawMaterialsModal] = useState(false);
+  const [rawMaterials, setRawMaterials] = useState([]);
+  const [loadingRawMaterials, setLoadingRawMaterials] = useState(false);
 
+  const fetchRawMaterials = async () => {
+    setLoadingRawMaterials(true);
     try {
-      isProcessing.current = true;
-      console.log("Checking for pending supply items...");
-
-      // Fetch all suppliers with their items
-      const res = await fetch(`${SUPPLIER_API_URL}/suppliers-with-items`, {
-        credentials: 'include'
-      });
-
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
+      const res = await fetch("http://localhost:5000/api/suppliers-mgmt-data");
       const data = await res.json();
-
+      
+      let allSupplierItems = [];
       if (data.success && data.suppliers) {
-        // Find all items with status "Pending" that haven't been processed yet
-        const pendingItems = [];
-
         data.suppliers.forEach(supplier => {
           if (supplier.items && supplier.items.length > 0) {
             supplier.items.forEach(item => {
-              // Only process if status is "Pending" and we haven't processed it in this session
-              if (item.status === "Pending" && !processedItemIds.current.has(item.id)) {
-                pendingItems.push({
-                  ...item,
-                  supplierName: supplier.name,
-                  supplierCompany: supplier.company,
-                  supplierId: supplier.id
-                });
-              }
+              allSupplierItems.push({
+                ...item,
+                supplierName: supplier.name,
+                supplierCompany: supplier.company
+              });
             });
           }
         });
-
-        if (pendingItems.length > 0) {
-          console.log(`Found ${pendingItems.length} new pending supply items, auto-processing...`);
-          await processPendingSupplies(pendingItems);
-        } else {
-          console.log("No new pending supply items found");
-        }
       }
+      setRawMaterials(allSupplierItems);
     } catch (err) {
-      console.error("Error checking pending supplies:", err);
+      console.error("Error fetching raw materials:", err);
+      showMessage("error", "Failed to load raw materials");
     } finally {
-      isProcessing.current = false;
+      setLoadingRawMaterials(false);
     }
   };
 
-  const processPendingSupplies = async (pendingItems) => {
-    try {
-      // Fetch all products to check for duplicates
-      const allProductsRes = await fetch(`${API_URL}?page=1&per_page=1000`);
-      const allProductsData = await allProductsRes.json();
-      let allProducts = [];
-
-      if (allProductsData && allProductsData.items && Array.isArray(allProductsData.items)) {
-        allProducts = allProductsData.items;
-      }
-
-      let addedCount = 0;
-      let updatedCount = 0;
-      const successfullyProcessed = [];
-
-      for (const supplyItem of pendingItems) {
-        try {
-          // Double-check if this item hasn't been processed by another instance
-          if (processedItemIds.current.has(supplyItem.id)) {
-            console.log(`Item ${supplyItem.id} already processed, skipping...`);
-            continue;
-          }
-
-          // Check if product already exists in inventory
-          const existingItem = allProducts.find(item =>
-            isSameProduct(item, supplyItem)
-          );
-
-          if (existingItem) {
-            // Update quantity of existing item
-            const supplyQty = parseInt(supplyItem.quantity) || 1;
-            const currentQty = parseInt(existingItem.quantity) || 0;
-            const newQty = currentQty + supplyQty;
-
-            console.log(`Updating ${existingItem.name}: ${currentQty} + ${supplyQty} = ${newQty}`);
-
-            // Update in backend
-            const updateRes = await fetch(`${API_URL}/${existingItem.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: existingItem.name,
-                Model: existingItem.model || "",
-                type: existingItem.type || "",
-                watts: existingItem.watts || "",
-                buyPrice: existingItem.buyPrice || 0,
-                sellPrice: existingItem.sellPrice || 0,
-                quantity: newQty,
-              }),
-            });
-
-            if (updateRes.ok) {
-              updatedCount++;
-              successfullyProcessed.push(supplyItem.id);
-            }
-          } else {
-            // Create new product
-            const supplyQty = parseInt(supplyItem.quantity) || 1;
-
-            const newItem = {
-              name: supplyItem.name,
-              Model: supplyItem.model || "",
-              type: supplyItem.type || "",
-              watts: supplyItem.watts || "",
-              buyPrice: parseFloat(supplyItem.buy_price || supplyItem.buyPrice || 0),
-              sellPrice: parseFloat(supplyItem.sell_price || supplyItem.sellPrice || 0),
-              quantity: supplyQty,
-            };
-
-            console.log('Creating new product:', newItem);
-
-            const createRes = await fetch(API_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(newItem),
-            });
-
-            if (createRes.ok) {
-              addedCount++;
-              successfullyProcessed.push(supplyItem.id);
-            } else {
-              const errorData = await createRes.json();
-              console.error('Failed to create product:', errorData);
-            }
-          }
-
-          // Only update status if the product operation was successful
-          if (successfullyProcessed.includes(supplyItem.id)) {
-            // Mark as processed in our local set
-            processedItemIds.current.add(supplyItem.id);
-
-            // Update the supply item status to "In Inventory"
-            await updateSupplyItemStatus(supplyItem.id, "In Inventory");
-          }
-        } catch (itemError) {
-          console.error(`Error processing supply item ${supplyItem.id}:`, itemError);
-        }
-      }
-
-      if (addedCount > 0 || updatedCount > 0) {
-        // Refresh products to get latest data
-        await loadProducts(currentPage);
-
-        showMessage("success",
-          `Auto-processed ${successfullyProcessed.length} supply item(s):\n` +
-          `📦 ${addedCount} new product(s) added\n` +
-          `📈 ${updatedCount} existing product(s) updated`
-        );
-      }
-
-    } catch (err) {
-      console.error("Error processing pending supplies:", err);
-    }
+  const openRawMaterialsModal = () => {
+    fetchRawMaterials();
+    setShowRawMaterialsModal(true);
   };
 
-  // ================= UPDATE SUPPLY ITEM STATUS =================
-  const updateSupplyItemStatus = async (itemId, newStatus) => {
+  const importRawMaterial = async (rm) => {
     try {
-      const response = await fetch(`${SUPPLIER_API_URL}/items/${itemId}`, {
-        method: "PUT",
+      const newItem = {
+        name: rm.name,
+        Model: rm.model || "",
+        type: rm.type || "",
+        watts: rm.watts || "",
+        buyPrice: parseFloat(rm.buy_price || rm.buyPrice || 0),
+        sellPrice: parseFloat(rm.sell_price || rm.sellPrice || rm.buy_price || rm.buyPrice || 0),
+        quantity: parseInt(rm.quantity || 1),
+      };
+      
+      const createRes = await fetch(API_URL, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: 'include',
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(newItem),
       });
 
-      if (!response.ok) {
-        console.error(`Failed to update status for item ${itemId}`);
+      if (createRes.ok) {
+        // Automatically remove from raw materials so it doesn't show there anymore
+        if (rm.id) {
+          try {
+            await fetch(`http://localhost:5000/api/items/${rm.id}`, {
+              method: "DELETE",
+              credentials: "include",
+            });
+          } catch (delErr) {
+            console.error("Could not delete raw material item:", delErr);
+          }
+        }
+        showMessage("success", `Successfully added ${rm.name} to products!`);
+        loadProducts(currentPage);
+        setShowRawMaterialsModal(false);
+      } else {
+        showMessage("error", `Failed to add ${rm.name}`);
       }
     } catch (err) {
-      console.error(`Error updating status for item ${itemId}:`, err);
+      showMessage("error", `Error adding product`);
     }
   };
 
@@ -1813,6 +1691,14 @@ export default function ItemsPage() {
           </label>
 
           <button
+            style={{ ...styles.button, backgroundColor: "#6366f1", color: "white" }}
+            onClick={openRawMaterialsModal}
+          >
+            <Plus size={16} /> Add from Raw Materials
+          </button>
+
+
+          <button
             style={{ ...styles.button, ...styles.primaryButton }}
             onClick={handleAddNewItem}
           >
@@ -1993,6 +1879,71 @@ export default function ItemsPage() {
             >
               <ChevronRight size={16} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Raw Materials Modal */}
+      {showRawMaterialsModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowRawMaterialsModal(false)}>
+          <div style={{ ...styles.modalContent, maxWidth: "700px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>Import from Raw Materials</h2>
+              <button
+                style={styles.closeButton}
+                onClick={() => setShowRawMaterialsModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
+              {loadingRawMaterials ? (
+                <div style={{ padding: "40px", textAlign: "center", color: "#9ca3af" }}>Loading raw materials...</div>
+              ) : rawMaterials.length === 0 ? (
+                <div style={{ padding: "40px", textAlign: "center", color: "#9ca3af" }}>No raw materials found.</div>
+              ) : (
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Name</th>
+                      <th style={styles.th}>Quantity</th>
+                      <th style={styles.th}>Buy Price</th>
+                      <th style={styles.th}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rawMaterials.map((rm) => (
+                      <tr key={`${rm.id}-${Math.random()}`}>
+                        <td style={styles.td}>
+                          {rm.name} <br/>
+                          <span style={{ fontSize: "11px", color: "#6366f1" }}>from {rm.supplierCompany}</span>
+                        </td>
+                        <td style={styles.td}>{rm.quantity}</td>
+                        <td style={styles.td}>₹{(rm.buy_price || rm.buyPrice || 0).toFixed(2)}</td>
+                        <td style={styles.td}>
+                          <button
+                            style={{ ...styles.button, ...styles.primaryButton, padding: "4px 8px", fontSize: "12px" }}
+                            onClick={() => importRawMaterial(rm)}
+                          >
+                            <Plus size={14} style={{marginRight: "4px"}} /> Add
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
+              <button
+                style={{ ...styles.button, ...styles.cancelButton }}
+                onClick={() => setShowRawMaterialsModal(false)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

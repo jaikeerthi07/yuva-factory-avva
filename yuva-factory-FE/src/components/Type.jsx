@@ -283,10 +283,8 @@ export default function ItemsByTypePage() {
         'Flavour': item.model || '',
         'Type': item.type || '',
         'Watts': item.watts || '',
-        'Buy Price': item.buyPrice || 0,
         'Sell Price': item.sellPrice || 0,
         'Quantity': item.quantity || 0,
-        'Profit %': item.profitPercent || '0.00',
         'Amount': item.amount || '0.00'
       }));
 
@@ -297,7 +295,7 @@ export default function ItemsByTypePage() {
       // Auto-size columns
       const wscols = [
         { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 10 },
-        { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }
+        { wch: 12 }, { wch: 10 }, { wch: 12 }
       ];
       worksheet['!cols'] = wscols;
 
@@ -924,19 +922,6 @@ export default function ItemsByTypePage() {
           </div>
 
           <div style={styles.formGroup}>
-            <label style={styles.label}>Buy Price (₹)</label>
-            <input
-              style={styles.input}
-              type="number"
-              min="0"
-              step="0.01"
-              value={editingItem.buyPrice || ''}
-              onChange={(e) => handleEditChange('buyPrice', e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
             <label style={styles.label}>Sell Price (₹)</label>
             <input
               style={styles.input}
@@ -1264,10 +1249,8 @@ export default function ItemsByTypePage() {
                     <th style={styles.th}>Product Name</th>
                     <th style={styles.th}>Flavour</th>
                     <th style={styles.th}>HSN</th>
-                    <th style={styles.th}>Buy Price</th>
                     <th style={styles.th}>Sell Price</th>
                     <th style={styles.th}>Quantity</th>
-                    <th style={styles.th}>Profit %</th>
                     <th style={styles.th}>Amount</th>
                     <th style={styles.th}>Actions</th>
                   </tr>
@@ -1290,26 +1273,11 @@ export default function ItemsByTypePage() {
                       </td>
                       
                       <td style={styles.td}>
-                        <span style={styles.buyPrice}>₹{item.buyPrice.toFixed(2)}</span>
-                      </td>
-                      
-                      <td style={styles.td}>
                         <span style={styles.sellPrice}>₹{item.sellPrice.toFixed(2)}</span>
                       </td>
                       
                       <td style={styles.td}>
                         <span style={styles.quantity}>{item.quantity}</span>
-                      </td>
-                      
-                      <td style={styles.td}>
-                        <span style={{
-                          ...styles.profitBadge,
-                          ...(parseFloat(item.profitPercent) >= 0 
-                            ? styles.profitPositive 
-                            : styles.profitNegative)
-                        }}>
-                          {item.profitPercent}%
-                        </span>
                       </td>
                       
                       <td style={styles.td}>

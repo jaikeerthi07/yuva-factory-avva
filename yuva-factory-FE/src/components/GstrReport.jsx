@@ -115,7 +115,7 @@ function rowsToCSV(cols, rows) {
   const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
   const header = cols.map(esc).join(",");
   const body   = rows.map(r => cols.map(c => esc(r[c] ?? "")).join(",")).join("\n");
-  return header + "\n" + body;
+  return "\uFEFF" + header + "\n" + body;
 }
 
 function rowsToJSON(rows) {

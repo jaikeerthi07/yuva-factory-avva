@@ -1024,8 +1024,9 @@ const VisitBillPage = () => {
     message += `*BILL DETAILS*\n`;
     message += `═══════════════════════\n`;
     message += `*Bill No:* ${bill.billNumber}\n`;
-    message += `*Date:* ${new Date(bill.createdAt).toLocaleDateString()}\n`;
-    message += `*Time:* ${new Date(bill.createdAt).toLocaleTimeString()}\n`;
+    const d = parseBillDateTime(bill.createdAt);
+    message += `*Date:* ${d ? d.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' }) : '-'}\n`;
+    message += `*Time:* ${d ? d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}\n`;
     message += `*Customer:* ${bill.customerName || 'Walk-in Customer'}\n`;
     message += `*Type:* ${(bill.customerType || 'external').toUpperCase()}\n`;
 
@@ -1171,36 +1172,34 @@ const VisitBillPage = () => {
 
   const handleExportExcel = () => {
     try {
-      const exportData = filteredBills.map(bill => ({
-        'Bill Number': bill.billNumber || '',
-        'Date': new Date(bill.createdAt).toLocaleDateString(),
-        'Time': new Date(bill.createdAt).toLocaleTimeString(),
-        'Customer Name': bill.customerName || 'Walk-in Customer',
-        'Customer Phone': bill.customerPhone || '',
-        'Customer Email': bill.customerEmail || '',
-        'Customer Type': (bill.customerType || 'external').toUpperCase(),
-        'Items Count': bill.itemCount || 0,
-        'Subtotal (₹)': (bill.subtotal || 0).toFixed(2),
-        'Discount Value': bill.discountType === 'percentage' ? `${bill.discountValue}%` : `₹${bill.discountValue.toFixed(2)}`,
-        'Discount Amount (₹)': (bill.discountAmount || 0).toFixed(2),
-        'Discount Type': bill.discountType || 'amount',
-        'Tax (₹)': (bill.tax || 0).toFixed(2),
-        'Total (₹)': (bill.total || 0).toFixed(2),
-        'Paid (₹)': (bill.paidAmount || 0).toFixed(2),
-        'Change (₹)': (bill.changeAmount || 0).toFixed(2),
-        'Due (₹)': Math.max(0, (bill.total || 0) - (bill.paidAmount || 0)).toFixed(2),
-        'Payment Method': (bill.paymentMethod || 'cash').toUpperCase()
-      }));
+      const exportData = filteredBills.map(bill => {
+        const d = parseBillDateTime(bill.createdAt);
+        const dateTimeStr = d ? `${d.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' })} ${d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}` : '-';
+        return {
+        'Bill No.': bill.billNumber || '',
+        'Date & Time': dateTimeStr,
+        'Customer': bill.customerName || 'Walk-in Customer',
+        'Type': (bill.customerType || 'external').toUpperCase(),
+        'Contact': bill.customerPhone || '',
+        'Items': bill.itemCount || 0,
+        'Subtotal': (bill.subtotal || 0).toFixed(2),
+        'Discount': bill.discountType === 'percentage' ? `${bill.discountValue}%` : `₹${(bill.discountAmount || 0).toFixed(2)}`,
+        'Tax': (bill.tax || 0).toFixed(2),
+        'Total': (bill.total || 0).toFixed(2),
+        'Paid': (bill.paidAmount || 0).toFixed(2),
+        'Due': Math.max(0, (bill.total || 0) - (bill.paidAmount || 0)).toFixed(2),
+        'Payment': (bill.paymentMethod || 'cash').toUpperCase()
+      };
+      });
 
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Bills");
 
       const wscols = [
-        { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 25 }, { wch: 15 },
-        { wch: 25 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 15 },
-        { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 12 },
-        { wch: 12 }, { wch: 12 }, { wch: 15 }
+        { wch: 18 }, { wch: 22 }, { wch: 20 }, { wch: 10 }, { wch: 15 },
+        { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 },
+        { wch: 12 }, { wch: 12 }, { wch: 12 }
       ];
       worksheet['!cols'] = wscols;
 
@@ -1225,7 +1224,7 @@ const VisitBillPage = () => {
 
   const handleExportPDF = () => {
     try {
-      const doc = new jsPDF();
+      const doc = new jsPDF('landscape');
 
       doc.setFontSize(20);
       doc.setTextColor(99, 102, 241);
@@ -1274,8 +1273,7 @@ const VisitBillPage = () => {
       doc.text(`Total Due: ₹${totalDue.toFixed(2)}`, 14, filterY + 33);
 
       const tableColumn = [
-        'Bill No', 'Date', 'Customer', 'Type', 'Items', 'Subtotal', 'Discount',
-        'Total (₹)', 'Paid (₹)', 'Due (₹)', 'Method'
+        'Bill No', 'Date & Time', 'Customer', 'Type', 'Contact', 'Items', 'Subtotal', 'Discount', 'Tax', 'Total', 'Paid', 'Due', 'Payment'
       ];
 
       const tableRows = filteredBills.map(bill => {
@@ -1285,26 +1283,31 @@ const VisitBillPage = () => {
         const total = parseFloat(bill.total) || 0;
         const paidAmount = parseFloat(bill.paidAmount) || 0;
         const subtotal = parseFloat(bill.subtotal) || 0;
+        const tax = parseFloat(bill.tax) || 0;
+        const d = parseBillDateTime(bill.createdAt);
+        const dateTimeStr = d ? `${d.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' })} ${d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}` : '-';
 
         let discountDisplay = '';
         if (bill.discountType === 'percentage') {
           discountDisplay = `${discountValue}%`;
         } else {
-          discountDisplay = `₹${discountAmount.toFixed(2)}`;
+          discountDisplay = `Rs${discountAmount.toFixed(2)}`;
         }
 
         return [
           bill.billNumber || '',
-          new Date(bill.createdAt).toLocaleDateString(),
-          (bill.customerName || 'Walk-in').substring(0, 20),
+          dateTimeStr,
+          (bill.customerName || 'Walk-in').substring(0, 15),
           (bill.customerType || 'ext').substring(0, 3).toUpperCase(),
+          bill.customerPhone || '',
           bill.itemCount || 0,
           subtotal.toFixed(2),
           discountDisplay,
+          tax.toFixed(2),
           total.toFixed(2),
           paidAmount.toFixed(2),
           Math.max(0, total - paidAmount).toFixed(2),
-          (bill.paymentMethod || 'cash').substring(0, 3).toUpperCase()
+          (bill.paymentMethod || 'cash').toUpperCase()
         ];
       });
 
@@ -1316,6 +1319,21 @@ const VisitBillPage = () => {
         startY: startY,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255] },
+        columnStyles: {
+          0: { halign: 'center' },
+          1: { halign: 'center' },
+          2: { halign: 'left' },
+          3: { halign: 'center' },
+          4: { halign: 'center' },
+          5: { halign: 'center' }, // Items
+          6: { halign: 'right' }, // Subtotal
+          7: { halign: 'right' }, // Discount
+          8: { halign: 'right' }, // Tax
+          9: { halign: 'right' }, // Total
+          10: { halign: 'right' }, // Paid
+          11: { halign: 'right' }, // Due
+          12: { halign: 'center' } // Payment
+        },
         alternateRowStyles: { fillColor: [240, 240, 240] },
       });
 

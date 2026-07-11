@@ -249,7 +249,7 @@ const Sidebar = ({ isOpen }) => {
               )}
 
               {hasPermission("raw_materials") && (
-                <NavLink to="/itemlist" style={getLinkStyle}>
+                <NavLink to="/raw-materials" style={getLinkStyle}>
                   <FaBoxOpen style={styles.icon} />
                   <span style={styles.text}>Raw Materials</span>
                 </NavLink>

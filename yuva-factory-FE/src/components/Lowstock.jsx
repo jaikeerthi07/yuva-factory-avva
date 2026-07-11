@@ -244,7 +244,6 @@ export default function LowStockPage() {
         'Current Stock': item.quantity || 0,
         'Status': item.quantity === 0 ? 'OUT OF STOCK' : 'LOW STOCK',
         'Required to reach 5': item.quantity === 0 ? lowStockThreshold : (lowStockThreshold - item.quantity) || 0,
-        'Buy Price (₹)': item.buyPrice || 0,
         'Sell Price (₹)': item.sellPrice || 0,
       }));
 
@@ -262,7 +261,6 @@ export default function LowStockPage() {
         { wch: 12 }, // Current Stock
         { wch: 12 }, // Status
         { wch: 18 }, // Required to reach 5
-        { wch: 12 }, // Buy Price
         { wch: 12 }, // Sell Price
       ];
       worksheet['!cols'] = wscols;
@@ -707,7 +705,6 @@ export default function LowStockPage() {
                     <th style={styles.modalTh}>Current Stock</th>
                     <th style={styles.modalTh}>Status</th>
                     <th style={styles.modalTh}>Required</th>
-                    <th style={styles.modalTh}>Buy Price</th>
                     <th style={styles.modalTh}>Order Quantity</th>
                   </tr>
                 </thead>
@@ -738,7 +735,6 @@ export default function LowStockPage() {
                           {item.quantity === 0 ? lowStockThreshold : (lowStockThreshold - item.quantity)}
                         </span>
                       </td>
-                      <td style={styles.modalTd}>₹{item.buyPrice.toFixed(2)}</td>
                       <td style={styles.modalTd}>
                         <input
                           type="number"
@@ -871,7 +867,6 @@ export default function LowStockPage() {
                 <th style={styles.th}>Current Stock</th>
                 <th style={styles.th}>Status</th>
                 <th style={styles.th}>Required to reach 5</th>
-                <th style={styles.th}>Buy Price (₹)</th>
                 <th style={styles.th}>Sell Price (₹)</th>
               </tr>
             </thead>
@@ -897,7 +892,6 @@ export default function LowStockPage() {
                       </span>
                     </td>
                     <td style={{...styles.td, ...styles.requiredCell}}>{required}</td>
-                    <td style={styles.td}>₹{item.buyPrice.toFixed(2)}</td>
                     <td style={styles.td}>₹{item.sellPrice.toFixed(2)}</td>
                   </tr>
                 );

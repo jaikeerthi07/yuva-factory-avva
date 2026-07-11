@@ -29,10 +29,10 @@ const EmployeeManager = () => {
     password: '',
     phone_number: '',
     department: '',
+    current_company: '',
     designation: '',
     date_of_joining: '',
     user_type: '',
-    current_company: '',
     company_id: '',
     aadhar_card_number: '',
     pan_card_number: '',
@@ -177,10 +177,10 @@ const EmployeeManager = () => {
       password: '',
       phone_number: '',
       department: '',
+      current_company: '',
       designation: '',
       date_of_joining: '',
       user_type: userTypes.length > 0 ? userTypes[0] : 'employee',
-      current_company: '',
       company_id: '',
       aadhar_card_number: '',
       pan_card_number: '',
@@ -294,10 +294,10 @@ const EmployeeManager = () => {
       password: '', // Don't show existing password
       phone_number: employee.phone_number || '',
       department: employee.department || '',
-      designation: employee.designation || '',
-      date_of_joining: employee.date_of_joining || '',
-      user_type: employee.user_type || (userTypes.length > 0 ? userTypes[0] : 'employee'),
       current_company: employee.current_company || '',
+      designation: employee.designation || '',
+      date_of_joining: employee.date_of_joining ? employee.date_of_joining.substring(0, 10) : '',
+      user_type: employee.user_type || (userTypes.length > 0 ? userTypes[0] : 'employee'),
       company_id: employee.company_id || '',
       aadhar_card_number: employee.aadhar_card_number || '',
       pan_card_number: employee.pan_card_number || '',
@@ -617,6 +617,48 @@ const EmployeeManager = () => {
                         onChange={handleInputChange}
                         style={styles.input}
                       />
+                    </div>
+
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Department</label>
+                      <input
+                        type="text"
+                        name="department"
+                        value={formData.department}
+                        onChange={handleInputChange}
+                        style={styles.input}
+                        placeholder="e.g., Sales"
+                      />
+                    </div>
+
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Company</label>
+                      <input
+                        type="text"
+                        name="current_company"
+                        value={formData.current_company}
+                        onChange={handleInputChange}
+                        style={styles.input}
+                        placeholder="e.g., V4Sure"
+                      />
+                    </div>
+                    
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>User Type *</label>
+                      <select
+                        name="user_type"
+                        value={formData.user_type}
+                        onChange={handleInputChange}
+                        style={styles.input}
+                        required
+                      >
+                        <option value="">Select User Type</option>
+                        {userTypes.map((type, index) => (
+                          <option key={index} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     
                   </div>

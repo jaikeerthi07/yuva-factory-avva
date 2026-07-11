@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Edit, Trash2, Hash } from "lucide-react";
+import { Hash, Trash2, Plus, PlusSquare } from "lucide-react";
 import axios from "axios";
 
 const API = "http://localhost:5000/api";
@@ -8,24 +8,29 @@ const RawMaterials = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Form state
-  const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  
-  const [formData, setFormData] = useState({
-    name: "",
-    quantity: "",
-    buyPrice: "",
-    sellPrice: ""
-  });
-
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/raw-materials`);
-      setItems(res.data.items || []);
+      const res = await axios.get(`${API}/suppliers-mgmt-data`);
+      const data = res.data;
+
+      if (data.success && data.suppliers) {
+        const allItems = [];
+        data.suppliers.forEach(supplier => {
+          if (supplier.items && supplier.items.length > 0) {
+            supplier.items.forEach(item => {
+              allItems.push({
+                ...item,
+                supplierName: supplier.name,
+                supplierCompany: supplier.company
+              });
+            });
+          }
+        });
+        setItems(allItems);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching supplier items:", err);
     } finally {
       setLoading(false);
     }
@@ -35,54 +40,99 @@ const RawMaterials = () => {
     fetchItems();
   }, []);
 
-  const openForm = (item = null) => {
-    if (item) {
-      setEditingItem(item);
-      setFormData({
-        name: item.name,
-        quantity: item.quantity?.toString() || "",
-        buyPrice: item.buyPrice?.toString() || "",
-        sellPrice: item.sellPrice?.toString() || ""
-      });
-    } else {
-      setEditingItem(null);
-      setFormData({ name: "", quantity: "", buyPrice: "", sellPrice: "" });
-    }
-    setShowModal(true);
-  };
-
-  const closeForm = () => setShowModal(false);
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    const payload = {
-      ...formData,
-      quantity: parseInt(formData.quantity, 10) || 0,
-      buyPrice: parseFloat(formData.buyPrice) || 0,
-      sellPrice: parseFloat(formData.sellPrice) || 0
-    };
+  const deleteItem = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
     try {
-      if (editingItem) {
-        await axios.put(`${API}/raw-materials/${editingItem.id}`, payload);
-      } else {
-        await axios.post(`${API}/raw-materials`, payload);
+      const response = await axios.delete(`${API}/items/${id}`);
+      if (response.data.success || response.status === 200) {
+        fetchItems(); // Refresh list
       }
-      closeForm();
-      fetchItems();
     } catch (err) {
-      console.error(err);
-      alert("Error saving raw material");
+      console.error("Error deleting item:", err);
+      alert("Failed to delete item.");
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
+  const addToProducts = async (item) => {
     try {
-      await axios.delete(`${API}/raw-materials/${id}`);
-      fetchItems();
+      const newItem = {
+        name: item.name,
+        Model: item.model || "",
+        model: item.model || "",
+        type: item.type || "",
+        Type: item.type || "",
+        watts: item.watts || "",
+        hsn: item.watts || "",
+        buyPrice: parseFloat(item.buy_price || item.buyPrice || 0),
+        sellPrice: parseFloat(item.sell_price || item.sellPrice || item.buy_price || item.buyPrice || 0),
+        quantity: parseInt(item.quantity || 1),
+      };
+      
+      const createRes = await fetch("http://localhost:5000/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newItem),
+      });
+
+      if (createRes.ok) {
+        // Automatically remove from raw materials
+        await axios.delete(`${API}/items/${item.id}`);
+        alert(`Successfully added ${item.name} to products!`);
+        fetchItems(); // Refresh the table
+      } else {
+        alert(`Failed to add ${item.name} to products.`);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Error adding product:", err);
+      alert("Error adding product.");
     }
+  };
+
+  const addAllToProducts = async () => {
+    if (!items || items.length === 0) {
+      alert("No items to add.");
+      return;
+    }
+    
+    if (!window.confirm(`Are you sure you want to add all ${items.length} items to your Products inventory?`)) return;
+
+    setLoading(true);
+    let successCount = 0;
+    
+    for (const item of items) {
+      try {
+        const newItem = {
+          name: item.name,
+          Model: item.model || "",
+          model: item.model || "",
+          type: item.type || "",
+          Type: item.type || "",
+          watts: item.watts || "",
+          hsn: item.watts || "",
+          buyPrice: parseFloat(item.buy_price || item.buyPrice || 0),
+          sellPrice: parseFloat(item.sell_price || item.sellPrice || 0),
+          quantity: parseInt(item.quantity || 1),
+        };
+        
+        const createRes = await fetch("http://localhost:5000/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newItem),
+        });
+
+        if (createRes.ok) {
+          successCount++;
+          // Automatically delete from raw materials
+          await axios.delete(`${API}/items/${item.id}`);
+        }
+      } catch (err) {
+        console.error("Error adding product:", item.name, err);
+      }
+    }
+    
+    setLoading(false);
+    fetchItems(); // Refresh the table
+    alert(`Successfully added ${successCount} out of ${items.length} items to Products!`);
   };
 
   const styles = {
@@ -97,92 +147,133 @@ const RawMaterials = () => {
       display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px"
     },
     title: { fontSize: "28px", fontWeight: "600", margin: 0 },
-    btnPrimary: {
-      padding: "10px 20px", backgroundColor: "#4da6ff", color: "white", 
-      border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600",
-      transition: "all 0.2s ease"
-    },
     tableContainer: {
       backgroundColor: "#1e293b", borderRadius: "12px", overflow: "hidden", border: "1px solid #334155"
     },
     table: { width: "100%", borderCollapse: "collapse" },
     th: { backgroundColor: "#334155", color: "#e2e8f0", padding: "12px 16px", textAlign: "left", fontSize: "14px", fontWeight: "600" },
     td: { padding: "14px 16px", borderBottom: "1px solid #334155", color: "#f8fafc", fontSize: "14px" },
-    actions: { display: "flex", gap: "10px" },
-    actionBtn: { background: "none", border: "none", cursor: "pointer", color: "#9ca3af", transition: "all 0.2s ease" },
-    
-    // Modal
-    modalOverlay: {
-      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
-    },
-    modalContent: {
-      backgroundColor: "#1e293b", padding: "30px", borderRadius: "12px", width: "450px",
-      maxWidth: "90%", maxHeight: "90vh", overflowY: "auto",
-      boxShadow: "0 10px 25px rgba(0,0,0,0.5)"
-    },
-    modalTitle: { margin: "0 0 20px 0", fontSize: "20px", color: "white", fontWeight: "600" },
-    formGroup: { marginBottom: "20px" },
-    label: { display: "block", marginBottom: "8px", color: "#cbd5e1", fontSize: "14px", fontWeight: "500" },
-    input: {
-      width: "100%", padding: "10px 12px", borderRadius: "6px", border: "1px solid #475569", 
-      backgroundColor: "#0f172a", color: "white", boxSizing: "border-box", fontSize: "14px",
-      transition: "all 0.2s ease"
-    },
-    modalFooter: { display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px" },
     loadingState: { textAlign: "center", padding: "40px", color: "#94a3b8" }
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>Raw Materials</h1>
-        <button style={styles.btnPrimary} onClick={() => openForm(null)}>+ Add New Item</button>
+        <h1 style={styles.title}>Raw Materials (Supplier Items)</h1>
+        <button 
+          onClick={addAllToProducts}
+          style={{
+            padding: "10px 16px",
+            backgroundColor: "#6366f1",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }}
+        >
+          <PlusSquare size={18} />
+          Add All to Products
+        </button>
       </div>
 
       <div style={styles.tableContainer}>
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.th}><Hash size={14} style={{display:'inline'}}/> ID</th>
-              <th style={styles.th}>Name</th>
-              <th style={styles.th}>Quantity</th>
-              <th style={styles.th}>Buy Price (₹)</th>
-              <th style={styles.th}>Sell Price (₹)</th>
-              <th style={styles.th}>Actions</th>
+              <th style={styles.th}>SUPPLIER</th>
+              <th style={styles.th}>ITEM NAME</th>
+              <th style={styles.th}>FLAVOUR</th>
+              <th style={styles.th}>TYPE</th>
+              <th style={styles.th}>HSN</th>
+              <th style={styles.th}>PRICE (₹)</th>
+              <th style={styles.th}>QUANTITY</th>
+              <th style={styles.th}>STATUS</th>
+              <th style={styles.th}>ATTACHMENT</th>
+              <th style={styles.th}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="6" style={styles.loadingState}>Loading...</td></tr>
+              <tr><td colSpan="10" style={styles.loadingState}>Loading...</td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan="6" style={{textAlign:"center", padding:"30px", color: "#94a3b8"}}>No items found. Click "Add New Item" to create one.</td></tr>
+              <tr><td colSpan="10" style={{textAlign:"center", padding:"30px", color: "#94a3b8"}}>No raw materials found from suppliers.</td></tr>
             ) : (
-              items.map(item => (
-                <tr key={item.id}>
-                  <td style={styles.td}>#{item.id}</td>
-                  <td style={styles.td}>{item.name}</td>
-                  <td style={styles.td}>{item.quantity}</td>
-                  <td style={styles.td}>₹{(item.buyPrice || 0).toFixed(2)}</td>
-                  <td style={styles.td}>₹{(item.sellPrice || 0).toFixed(2)}</td>
+              items.map((item, index) => (
+                <tr key={`${item.id}-${index}`}>
                   <td style={styles.td}>
-                    <div style={styles.actions}>
-                      <button 
-                        style={{...styles.actionBtn, color: "#60a5fa"}} 
-                        onClick={() => openForm(item)}
-                        onMouseEnter={(e) => e.currentTarget.style.color = "#3b82f6"}
-                        onMouseLeave={(e) => e.currentTarget.style.color = "#60a5fa"}
+                    <span style={{ fontWeight: "500", color: "#f8fafc" }}>{item.supplierCompany}</span> <br/>
+                    <span style={{ fontSize: "12px", color: "#94a3b8" }}>{item.supplierName}</span>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={{ fontWeight: '500', color: '#fff' }}>{item.name}</span>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={{ background: '#334155', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                      {item.model || '—'}
+                    </span>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={{ background: '#334155', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                      {item.type || '—'}
+                    </span>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={{ fontFamily: 'monospace' }}>{item.watts || '—'}</span>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={{ fontWeight: '600', color: '#10b981' }}>₹{(item.buy_price || item.buyPrice || 0).toFixed(2)}</span>
+                  </td>
+                  <td style={styles.td}>
+                    {item.quantity}
+                  </td>
+                  <td style={styles.td}>
+                    <span style={{ 
+                      background: item.status === 'Pending' ? '#f59e0b' : '#334155', 
+                      color: item.status === 'Pending' ? '#000' : '#e2e8f0',
+                      padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '600'
+                    }}>
+                      {item.status || 'Received'}
+                    </span>
+                  </td>
+                  <td style={styles.td}>
+                    {item.attachment ? (
+                      <a 
+                        href={`http://localhost:5000/uploads/${item.attachment}`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ color: '#60a5fa', textDecoration: 'none', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
-                        <Edit size={16} />
+                        📎 View File
+                      </a>
+                    ) : (
+                      <span style={{ color: '#6b7280', fontSize: '12px' }}>—</span>
+                    )}
+                  </td>
+                  <td style={styles.td}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button 
+                        onClick={() => addToProducts(item)}
+                        title="Add to Products"
+                        style={{
+                          background: "#10b981", color: "white", border: "none", padding: "4px 8px", 
+                          borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px"
+                        }}
+                      >
+                        <Plus size={14} /> Add
                       </button>
                       <button 
-                        style={{...styles.actionBtn, color: "#f87171"}} 
-                        onClick={() => handleDelete(item.id)}
-                        onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"}
-                        onMouseLeave={(e) => e.currentTarget.style.color = "#f87171"}
+                        onClick={() => deleteItem(item.id)}
+                        title="Delete Item"
+                        style={{
+                          background: "#ef4444", color: "white", border: "none", padding: "4px 8px", 
+                          borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"
+                        }}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </td>
@@ -192,95 +283,8 @@ const RawMaterials = () => {
           </tbody>
         </table>
       </div>
-
-      {showModal && (
-        <div style={styles.modalOverlay} onClick={closeForm}>
-          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h2 style={styles.modalTitle}>{editingItem ? "Edit Raw Material" : "Add Raw Material"}</h2>
-            <form onSubmit={handleSave}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Name *</label>
-                <input 
-                  required 
-                  style={styles.input} 
-                  value={formData.name} 
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  placeholder="e.g., Wood, Steel, Plastic, Copper"
-                  onFocus={(e) => e.target.style.borderColor = "#4da6ff"}
-                  onBlur={(e) => e.target.style.borderColor = "#475569"}
-                />
-              </div>
-              
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Quantity *</label>
-                <input
-                  required
-                  type="text"
-                  style={styles.input}
-                  value={formData.quantity}
-                  onChange={e => setFormData({...formData, quantity: e.target.value})}
-                  placeholder="e.g., 100, 50kg, 200 units"
-                  onFocus={(e) => e.target.style.borderColor = "#4da6ff"}
-                  onBlur={(e) => e.target.style.borderColor = "#475569"}
-                />
-              </div>
-              
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Buy Price (₹) *</label>
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  style={styles.input}
-                  value={formData.buyPrice}
-                  onChange={e => setFormData({...formData, buyPrice: e.target.value})}
-                  placeholder="e.g., 500.00"
-                  onFocus={(e) => e.target.style.borderColor = "#4da6ff"}
-                  onBlur={(e) => e.target.style.borderColor = "#475569"}
-                />
-              </div>
-              
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Sell Price (₹) *</label>
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  style={styles.input}
-                  value={formData.sellPrice}
-                  onChange={e => setFormData({...formData, sellPrice: e.target.value})}
-                  placeholder="e.g., 750.00"
-                  onFocus={(e) => e.target.style.borderColor = "#4da6ff"}
-                  onBlur={(e) => e.target.style.borderColor = "#475569"}
-                />
-              </div>
-              
-              <div style={styles.modalFooter}>
-                <button 
-                  type="button" 
-                  onClick={closeForm} 
-                  style={{...styles.btnPrimary, backgroundColor: "#64748b"}}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#475569"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#64748b"}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  style={styles.btnPrimary}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#3b82f6"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#4da6ff"}
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
 export default RawMaterials;
-

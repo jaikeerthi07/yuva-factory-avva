@@ -82,9 +82,10 @@ const PaymentTracking = () => {
               });
               const paymentData = await paymentResponse.json();
               
-              // Calculate totals
-              const totalPurchase = supplier.items.reduce((sum, item) => 
-                sum + ((item.quantity || 0) * (item.buy_price || 0)), 0);
+              // Use persistent total from supplier (doesn't reset when items are deleted)
+              const totalPurchase = supplier.total_purchase_amount ||
+                supplier.items.reduce((sum, item) =>
+                  sum + ((item.quantity || 0) * (item.buy_price || 0)), 0);
               const totalPaid = paymentData.success ? 
                 paymentData.payments.reduce((sum, p) => sum + p.amount, 0) : 0;
               const remainingBalance = totalPurchase - totalPaid;
