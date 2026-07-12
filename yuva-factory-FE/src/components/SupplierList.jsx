@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const SupplierDuplicatePage = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -132,31 +134,42 @@ const SupplierDuplicatePage = () => {
   const closePopup = () => { setShowSupplierDetails(false); setSelectedGroup(null); };
   const getItemCountForSupplier = (supplierId) => items.filter(item => item.supplier_id === supplierId).length;
 
-  // ✅ GST added to Excel export
+  // ✅ Export to real .xlsx file
   const exportToExcel = () => {
-    let csvContent = "Name,Company,GST Number,HSN Code,Email,Phone,Address\n";
-    filteredGroups.forEach(group => {
-      const row = [
-        `"${group.name || ''}"`,
-        `"${group.company || ''}"`,
-        `"${group.gst || ''}"`,
-        `"${group.hsn_code || ''}"`,
-        `"${group.email || ''}"`,
-        `"${group.phone || ''}"`,
-        `"${group.address || ''}"`
-      ].join(',');
-      csvContent += row + '\n';
-    });
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `supplier_list_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      const exportData = filteredGroups.map(group => ({
+        'Name': group.name || '',
+        'Company': group.company || '',
+        'GST Number': group.gst || '',
+        'HSN Code': group.hsn_code || '',
+        'Email': group.email || '',
+        'Phone': group.phone || '',
+        'Address': group.address || '',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Supplier List');
+
+      // Auto-size columns
+      worksheet['!cols'] = [
+        { wch: 20 }, // Name
+        { wch: 22 }, // Company
+        { wch: 20 }, // GST Number
+        { wch: 15 }, // HSN Code
+        { wch: 25 }, // Email
+        { wch: 15 }, // Phone
+        { wch: 30 }, // Address
+      ];
+
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const file = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      const date = new Date().toISOString().split('T')[0];
+      saveAs(file, `Supplier_List_${date}.xlsx`);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to export Excel file.');
+    }
   };
 
   // ✅ GST added to PDF export

@@ -238,9 +238,9 @@ export default function LowStockPage() {
       const exportData = filteredItems.map(item => ({
         'ID': item.id || '',
         'Name': item.name || '',
-        'Model': item.model || '',
+        'Flavour': item.model || '',
         'Type': item.type || '',
-        'Watts': item.watts || '',
+        'HSN Code': item.watts || '',
         'Current Stock': item.quantity || 0,
         'Status': item.quantity === 0 ? 'OUT OF STOCK' : 'LOW STOCK',
         'Required to reach 5': item.quantity === 0 ? lowStockThreshold : (lowStockThreshold - item.quantity) || 0,
