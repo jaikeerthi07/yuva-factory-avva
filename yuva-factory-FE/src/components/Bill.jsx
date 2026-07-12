@@ -2738,7 +2738,7 @@ billTableHeader: {
     }
   };
 
-  // Handle print
+  // Handle print — uses a hidden iframe so focus never leaves the main window
   const handlePrint = async (stateTaxType = 'cgst_sgst') => {
     const subtotal = calculateSubtotal();
     if (subtotal === 0) {
@@ -2747,135 +2747,139 @@ billTableHeader: {
       return;
     }
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      setError('Pop-up blocked! Please allow pop-ups for this site to print.');
-      setTimeout(() => setError(''), 3000);
-      return;
-    }
-
     const savedData = await saveBillToDatabase();
-    
-    if (savedData) {
-      const confirmedBillNumber = savedData.billNumber;
-      const printHTML = generateBillHTML(confirmedBillNumber, stateTaxType);
-      const adminPrint = isAdminUser;
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Bill - ${confirmedBillNumber}</title>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                border: none;
-                background: none;
-                box-shadow: none;
-                outline: none;
-              }
-              body {
-                margin: 0;
-                padding: 0;
-                width: ${adminPrint ? '210mm' : '80mm'};
-                font-family: 'Courier New', monospace;
-                font-size: 11px;
-                line-height: 1.3;
-                background: white;
-              }
-              #billPaper {
-                width: ${adminPrint ? '210mm' : '280px'};
-                margin: 0 auto;
-                padding: 12px;
-                background: white;
-                border: none;
-              }
-              .bill-items-header {
-                display: grid;
-                grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
-                font-weight: bold;
-                padding: 4px 0;
-                border-bottom: 1px solid #000 !important;
-                font-size: 10px;
-                text-align: center;
-              }
-              .bill-item {
-                display: grid;
-                grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
-                padding: 3px 0;
-                border-bottom: 1px dotted #000 !important;
-                font-size: 9px;
-                text-align: center;
-                align-items: center;
-              }
-              .bill-summary {
-                margin: 10px 0;
-                padding: 8px 0;
-                border-top: 1px solid #000 !important;
-              }
-              .summary-row {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 3px;
-                font-size: 10px;
-              }
-              .summary-row-total {
-                font-weight: bold;
-                font-size: 12px;
-                border-top: 1px dashed #000 !important;
-                padding-top: 6px;
-                margin-top: 6px;
-              }
-              .created-by {
-                margin-top: 8px;
-                padding-top: 5px;
-                border-top: 1px dotted #000 !important;
-                font-size: 8px;
-                text-align: center;
-              }
-              input, select, button, textarea {
-                display: none !important;
-              }
-              .payment-section {
-                display: none !important;
-              }
-              .discount-section {
-                display: none !important;
-              }
-              * {
-                background: white !important;
-                color: black !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-              @page {
-                size: ${isAdminUser ? 'A4 portrait' : '80mm auto'};
-                margin: 0;
-              }
-            </style>
-          </head>
-          <body>
-            ${printHTML.replace('</html>', '')}
-            <script>
-              window.onload = function() {
-                setTimeout(function() {
-                  window.print();
-                  setTimeout(function() {
-                    window.close();
-                  }, 500);
-                }, 300);
-              };
-            </script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    } else {
-      printWindow.close();
-    }
+    if (!savedData) return;
+
+    const confirmedBillNumber = savedData.billNumber;
+    const printHTML = generateBillHTML(confirmedBillNumber, stateTaxType);
+    const adminPrint = isAdminUser;
+
+    // Remove any previous hidden print iframe
+    const existingFrame = document.getElementById('__billPrintFrame__');
+    if (existingFrame) existingFrame.remove();
+
+    // Build the full print document HTML
+    const fullHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Bill - ${confirmedBillNumber}</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+              border: none;
+              background: none;
+              box-shadow: none;
+              outline: none;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              width: ${adminPrint ? '210mm' : '80mm'};
+              font-family: 'Courier New', monospace;
+              font-size: 11px;
+              line-height: 1.3;
+              background: white;
+            }
+            #billPaper {
+              width: ${adminPrint ? '210mm' : '280px'};
+              margin: 0 auto;
+              padding: 12px;
+              background: white;
+              border: none;
+            }
+            .bill-items-header {
+              display: grid;
+              grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
+              font-weight: bold;
+              padding: 4px 0;
+              border-bottom: 1px solid #000 !important;
+              font-size: 10px;
+              text-align: center;
+            }
+            .bill-item {
+              display: grid;
+              grid-template-columns: ${isTaxBill ? (stateTaxType === 'igst' ? '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 1.2fr' : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 0.7fr 0.7fr 1.2fr') : '0.4fr 1.8fr 0.7fr 0.4fr 0.7fr 0.8fr 1.2fr'};
+              padding: 3px 0;
+              border-bottom: 1px dotted #000 !important;
+              font-size: 9px;
+              text-align: center;
+              align-items: center;
+            }
+            .bill-summary {
+              margin: 10px 0;
+              padding: 8px 0;
+              border-top: 1px solid #000 !important;
+            }
+            .summary-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 3px;
+              font-size: 10px;
+            }
+            .summary-row-total {
+              font-weight: bold;
+              font-size: 12px;
+              border-top: 1px dashed #000 !important;
+              padding-top: 6px;
+              margin-top: 6px;
+            }
+            .created-by {
+              margin-top: 8px;
+              padding-top: 5px;
+              border-top: 1px dotted #000 !important;
+              font-size: 8px;
+              text-align: center;
+            }
+            input, select, button, textarea { display: none !important; }
+            .payment-section { display: none !important; }
+            .discount-section { display: none !important; }
+            * {
+              background: white !important;
+              color: black !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            @page {
+              size: ${isAdminUser ? 'A4 portrait' : '80mm auto'};
+              margin: 0;
+            }
+          </style>
+        </head>
+        <body>
+          ${printHTML.replace('</html>', '')}
+        </body>
+      </html>
+    `;
+
+    // Create a hidden iframe — printing inside it keeps focus on the main window
+    const iframe = document.createElement('iframe');
+    iframe.id = '__billPrintFrame__';
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;border:none;';
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (e) {
+        console.error('Print error:', e);
+      }
+      // Remove iframe after printing, restore focus to main window
+      setTimeout(() => {
+        iframe.remove();
+        window.focus();
+      }, 1000);
+    };
+
+    // Write the HTML into the iframe
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(fullHTML);
+    iframe.contentDocument.close();
   };
 
   // Handle WhatsApp share
@@ -3247,7 +3251,6 @@ billTableHeader: {
                         onChange={(e) => updateQuantity(product.id, product.source || 'product', e.target.value)}
                       />
                       <button 
-                        style={styles.qtyBtn}
                         onClick={() => updateQuantity(product.id, product.source || 'product', product.quantity + 1)}
                         disabled={product.maxQuantity ? product.quantity >= product.maxQuantity : false}
                         title={product.maxQuantity && product.quantity >= product.maxQuantity ? "Maximum stock reached" : ""}
