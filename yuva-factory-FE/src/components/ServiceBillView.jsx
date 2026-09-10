@@ -42,7 +42,7 @@ import axios from 'axios';
 
 // Create axios instance with credentials
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
@@ -639,7 +639,7 @@ const ServiceBills = () => {
               <Button onClick={() => setOpenDialog(false)}>Close</Button>
               <Button
                 variant="contained"
-                onClick={() => window.open(`http://localhost:5000/api/service-bills/${selectedBill.bill?.id}/pdf`, '_blank')}
+                onClick={() => window.open(${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/service-bills/${selectedBill.bill?.id}/pdf`, '_blank')}
                 disabled={!selectedBill.bill?.id}
               >
                 Download PDF

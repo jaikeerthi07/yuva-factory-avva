@@ -15,7 +15,7 @@ import {
   FaBan,
 } from "react-icons/fa";
 
-const API = "http://localhost:5000/api";
+const API = (process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api";
 
 const STATUS_COLORS = {
   Pending: { bg: "#fbbf24", text: "#000" },

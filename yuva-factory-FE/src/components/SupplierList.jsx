@@ -17,7 +17,7 @@ const SupplierDuplicatePage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  const BASE_URL = 'http://127.0.0.1:5000';
+  const BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'';
 
   useEffect(() => { checkAuth(); }, []);
   useEffect(() => { filterGroups(); }, [searchTerm, searchField, groupedSuppliers]);

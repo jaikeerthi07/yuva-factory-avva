@@ -8,7 +8,7 @@ import {
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-const API_URL = "http://localhost:5000/api/products";
+const API_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/products";
 const ITEMS_PER_PAGE = 9;
 
 export default function ItemsByTypePage() {

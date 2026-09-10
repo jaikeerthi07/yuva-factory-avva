@@ -30,7 +30,7 @@ const AccessControl = () => {
 
   const fetchUserTypes = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/user-types");
+      const response = await axios.get((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/user-types");
       setUserTypes(response.data);
     } catch (error) {
       console.error("Error fetching user types:", error);
@@ -91,7 +91,7 @@ const AccessControl = () => {
 
     setIsSaving(true);
     try {
-      await axios.post("http://localhost:5000/api/user-types", {
+      await axios.post((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/user-types", {
         name: userTypeName,
         base_template: baseRole,
         permissions: userPermissions
@@ -113,7 +113,7 @@ const AccessControl = () => {
     if (!window.confirm("Are you sure you want to delete this user type?")) return;
     
     try {
-      await axios.delete(`http://localhost:5000/api/user-types/${id}`);
+      await axios.delete(${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/user-types/${id}`);
       fetchUserTypes();
     } catch (error) {
       alert("Failed to delete user type");

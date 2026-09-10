@@ -2,11 +2,11 @@ import os
 import pymysql
 from datetime import timedelta
 
-# 🔹 Make PyMySQL act like MySQLdb (Windows fix)
+#  Make PyMySQL act like MySQLdb (Windows fix)
 pymysql.install_as_MySQLdb()
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = 'mysql://root:root123@localhost/Yuva_factory'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'mysql://root:jaikeerthi07a@localhost/Yuva_factory')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # File upload configuration

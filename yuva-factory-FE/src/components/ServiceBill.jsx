@@ -90,7 +90,7 @@ const ServiceBill = () => {
 
   // Create axios instance with better configuration
   const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json'

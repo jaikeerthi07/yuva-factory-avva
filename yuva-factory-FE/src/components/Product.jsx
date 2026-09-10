@@ -9,9 +9,9 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import ALL_HSN_CODES from "../data/hsnCodes.json";
 
-const API_URL = "http://localhost:5000/api/products";
-const SUPPLIER_API_URL = "http://localhost:5000/api";
-const BILLING_API_URL = "http://localhost:5000/api/billing";
+const API_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/products";
+const SUPPLIER_API_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api";
+const BILLING_API_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/billing";
 
 export default function ItemsPage() {
   const [items, setItems] = useState([]);
@@ -129,7 +129,7 @@ export default function ItemsPage() {
   const fetchRawMaterials = async () => {
     setLoadingRawMaterials(true);
     try {
-      const res = await fetch("http://localhost:5000/api/suppliers-mgmt-data");
+      const res = await fetch((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/suppliers-mgmt-data");
       const data = await res.json();
       
       let allSupplierItems = [];
@@ -182,7 +182,7 @@ export default function ItemsPage() {
         // Automatically remove from raw materials so it doesn't show there anymore
         if (rm.id) {
           try {
-            await fetch(`http://localhost:5000/api/items/${rm.id}`, {
+            await fetch(${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/items/${rm.id}`, {
               method: "DELETE",
               credentials: "include",
             });

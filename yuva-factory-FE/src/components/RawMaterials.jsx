@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Hash, Trash2, Plus, PlusSquare } from "lucide-react";
 import axios from "axios";
 
-const API = "http://localhost:5000/api";
+const API = (process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api";
 
 const RawMaterials = () => {
   const [items, setItems] = useState([]);
@@ -68,7 +68,7 @@ const RawMaterials = () => {
         quantity: parseInt(item.quantity || 1),
       };
       
-      const createRes = await fetch("http://localhost:5000/api/products", {
+      const createRes = await fetch((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newItem),
@@ -114,7 +114,7 @@ const RawMaterials = () => {
           quantity: parseInt(item.quantity || 1),
         };
         
-        const createRes = await fetch("http://localhost:5000/api/products", {
+        const createRes = await fetch((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newItem),
@@ -242,7 +242,7 @@ const RawMaterials = () => {
                   <td style={styles.td}>
                     {item.attachment ? (
                       <a 
-                        href={`http://localhost:5000/uploads/${item.attachment}`}
+                        href={${process.env.REACT_APP_API_URL || "http://localhost:5000"}/uploads/${item.attachment}`}
                         target="_blank" 
                         rel="noopener noreferrer"
                         style={{ color: '#60a5fa', textDecoration: 'none', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}

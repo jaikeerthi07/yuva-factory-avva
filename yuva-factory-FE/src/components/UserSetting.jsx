@@ -29,7 +29,7 @@ const UserSetting = () => {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
 
-  const API_BASE = "http://localhost:5000/api";
+  const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api";
 
   const fetchInitialData = async () => {
     setLoading(true);

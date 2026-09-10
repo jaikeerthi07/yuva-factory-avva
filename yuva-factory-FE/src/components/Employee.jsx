@@ -50,7 +50,7 @@ const EmployeeManager = () => {
     pan_attachment: null
   });
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api';
 
   // Fetch all employees, user types, and companies on component mount
   useEffect(() => {

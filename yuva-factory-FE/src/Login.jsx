@@ -28,7 +28,7 @@ const Login = () => {
     try {
       // First try employee login
       console.log("Attempting employee login...");
-      const employeeResponse = await fetch("http://localhost:5000/api/auth/login", {
+      const employeeResponse = await fetch((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -66,7 +66,7 @@ const Login = () => {
 
       // If employee login fails, try the old login endpoint
       console.log("Employee login failed, trying old login endpoint...");
-      const oldResponse = await fetch("http://localhost:5000/api/login", {
+      const oldResponse = await fetch((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

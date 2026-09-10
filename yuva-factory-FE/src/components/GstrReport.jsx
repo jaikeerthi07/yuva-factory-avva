@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'';
 
 // ─── Tab definitions ───────────────────────────────────────────────────────────
 const TABS = ["b2b,sez,de","b2cl","b2cs","cdnr","cdnur","exp","at","atadj","exemp","hsn","hsn(b2b)","hsn(b2c)","docs"];
