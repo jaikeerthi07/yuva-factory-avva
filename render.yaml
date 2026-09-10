@@ -11,8 +11,9 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
 
-  - type: static
+  - type: web
     name: yuva-factory-frontend
+    env: static
     buildCommand: "cd yuva-factory-FE && npm install && npm run build"
     staticPublishPath: "yuva-factory-FE/build"
     routes:
