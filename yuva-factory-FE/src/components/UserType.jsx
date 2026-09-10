@@ -16,7 +16,7 @@ const UserTypeManager = () => {
   const [error, setError] = useState('');
 
   // API base URL - adjust according to your backend
-  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api';
+  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + '/api';
 
   // Fetch all user types on component mount
   useEffect(() => {
@@ -46,7 +46,7 @@ const UserTypeManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const trimmedValue = userTypeInput.trim();
-    
+
     if (trimmedValue === '') {
       alert('Please enter a user type');
       return;
@@ -69,10 +69,10 @@ const UserTypeManager = () => {
 
       const newUserType = await response.json();
       setUserTypes([...userTypes, newUserType]);
-      
+
       // Auto-set as active role for configuration
       localStorage.setItem("userType", trimmedValue);
-      
+
       setUserTypeInput('');
       alert(`User Type "${trimmedValue}" added. Role is now active for configuration.`);
     } catch (err) {
@@ -86,7 +86,7 @@ const UserTypeManager = () => {
   // Save the edited user type
   const saveEdit = async (id) => {
     const trimmedValue = editValue.trim();
-    
+
     if (trimmedValue === '') {
       alert('User type cannot be empty');
       return;
@@ -161,14 +161,14 @@ const UserTypeManager = () => {
     <div style={styles.container}>
       <div style={styles.card}>
         <h1 style={styles.title}>User Type Manager</h1>
-        
+
         {error && (
           <div style={styles.errorMessage}>
             {error}
             <button onClick={() => setError('')} style={styles.closeButton}>×</button>
           </div>
         )}
-        
+
         {/* Form Section */}
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.formGroup}>
@@ -185,8 +185,8 @@ const UserTypeManager = () => {
               disabled={loading}
             />
           </div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             style={styles.addButton}
             disabled={loading}
           >
@@ -208,7 +208,7 @@ const UserTypeManager = () => {
                   <th style={styles.tableHeader}>S.No</th>
                   <th style={styles.tableHeader}>User Type</th>
                   <th style={styles.tableHeader}>Actions</th>
-                 </tr>
+                </tr>
               </thead>
               <tbody>
                 {userTypes.map((userType, index) => (
@@ -233,14 +233,14 @@ const UserTypeManager = () => {
                         <div style={styles.actionButtons}>
                           <button
                             onClick={() => saveEdit(userType.id)}
-                            style={{...styles.actionButton, ...styles.saveButton}}
+                            style={{ ...styles.actionButton, ...styles.saveButton }}
                             disabled={loading}
                           >
                             Save
                           </button>
                           <button
                             onClick={cancelEdit}
-                            style={{...styles.actionButton, ...styles.cancelButton}}
+                            style={{ ...styles.actionButton, ...styles.cancelButton }}
                             disabled={loading}
                           >
                             Cancel
@@ -253,20 +253,20 @@ const UserTypeManager = () => {
                               localStorage.setItem("userType", userType.name);
                               navigate('/userSettings');
                             }}
-                            style={{...styles.actionButton, ...styles.manageButton}}
+                            style={{ ...styles.actionButton, ...styles.manageButton }}
                           >
                             Manage
                           </button>
                           <button
                             onClick={() => startEditing(userType)}
-                            style={{...styles.actionButton, ...styles.editButton}}
+                            style={{ ...styles.actionButton, ...styles.editButton }}
                             disabled={loading}
                           >
                             Update
                           </button>
                           <button
                             onClick={() => deleteUserType(userType.id)}
-                            style={{...styles.actionButton, ...styles.deleteButton}}
+                            style={{ ...styles.actionButton, ...styles.deleteButton }}
                             disabled={loading}
                           >
                             Delete

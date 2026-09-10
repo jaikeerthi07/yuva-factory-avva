@@ -162,17 +162,17 @@ const VisitBillPage = () => {
 
   const generateBillHTML = (bill, stateTaxType = 'cgst_sgst') => {
     const activeProducts = bill.items || [];
-    
+
     // Recalculate if totals are zero
     let subtotal = parseFloat(bill.subtotal) || 0;
     if (subtotal === 0 && activeProducts.length > 0) {
       subtotal = activeProducts.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
     }
-    
+
     let discountAmount = parseFloat(bill.discountAmount) || 0;
     let taxAmount = parseFloat(bill.tax) || 0;
     let total = parseFloat(bill.total) || 0;
-    
+
     if (total === 0 && subtotal > 0) {
       total = subtotal - discountAmount + taxAmount;
     }
@@ -182,12 +182,12 @@ const VisitBillPage = () => {
     const change = Math.max(0, paidAmount - total);
     const amountInWords = formatAmountInWords(total);
     const grossAmount = subtotal - discountAmount;
-    
+
     const GST_RATE_PERCENT = 5;
     const GST_MULTIPLIER = 1.05;
-    
+
     const isExclusiveTaxBill = bill.isExclusiveTaxBill || false;
-    
+
     if (taxAmount === 0 && subtotal > 0) {
       if (isExclusiveTaxBill) {
         taxAmount = ((subtotal - discountAmount) / GST_MULTIPLIER) * (GST_RATE_PERCENT / 100);
@@ -195,11 +195,11 @@ const VisitBillPage = () => {
         taxAmount = (subtotal - discountAmount) - ((subtotal - discountAmount) / GST_MULTIPLIER);
       }
     }
-    
+
     const cgstTotal = (taxAmount / 2).toFixed(2);
     const sgstTotal = (taxAmount / 2).toFixed(2);
     const igstTotal = taxAmount.toFixed(2);
-    
+
     const isTaxBill = true;
     const customerType = bill.customerType || 'external';
     const paymentMethod = bill.paymentMethod || 'cash';
@@ -422,16 +422,16 @@ const VisitBillPage = () => {
               </div>
               <div>
                 ${activeProducts.map((item, idx) => {
-                  const rate = parseFloat(item.sellPrice || 0);
-                  const qty = item.quantity || 0;
-                  const freeQty = getFreeQuantity(qty);
-                  const itemTotal = parseFloat(item.total || 0);
-                  const itemTax = getLineTaxAmount(item);
-                  const cgstAmt = (itemTax / 2).toFixed(2);
-                  const sgstAmt = (itemTax / 2).toFixed(2);
-                  const igstAmt = itemTax.toFixed(2);
+      const rate = parseFloat(item.sellPrice || 0);
+      const qty = item.quantity || 0;
+      const freeQty = getFreeQuantity(qty);
+      const itemTotal = parseFloat(item.total || 0);
+      const itemTax = getLineTaxAmount(item);
+      const cgstAmt = (itemTax / 2).toFixed(2);
+      const sgstAmt = (itemTax / 2).toFixed(2);
+      const igstAmt = itemTax.toFixed(2);
 
-                  return `
+      return `
                     <div class="bill-item">
                       <span>${idx + 1}</span>
                       <span class="bill-item-name">
@@ -446,7 +446,7 @@ const VisitBillPage = () => {
                       <span>${itemTotal.toFixed(2)}</span>
                     </div>
                   `;
-                }).join('')}
+    }).join('')}
               </div>
             </div>
             
@@ -523,7 +523,7 @@ const VisitBillPage = () => {
   });
   const [sortBy, setSortBy] = useState('newest');
 
-  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api';
+  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + '/api';
 
   // Create axios instance with credentials
   const api = axios.create({
@@ -1176,20 +1176,20 @@ const VisitBillPage = () => {
         const d = parseBillDateTime(bill.createdAt);
         const dateTimeStr = d ? `${d.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' })} ${d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}` : '-';
         return {
-        'Bill No.': bill.billNumber || '',
-        'Date & Time': dateTimeStr,
-        'Customer': bill.customerName || 'Walk-in Customer',
-        'Type': (bill.customerType || 'external').toUpperCase(),
-        'Contact': bill.customerPhone || '',
-        'Items': bill.itemCount || 0,
-        'Subtotal': (bill.subtotal || 0).toFixed(2),
-        'Discount': bill.discountType === 'percentage' ? `${bill.discountValue}%` : `₹${(bill.discountAmount || 0).toFixed(2)}`,
-        'Tax': (bill.tax || 0).toFixed(2),
-        'Total': (bill.total || 0).toFixed(2),
-        'Paid': (bill.paidAmount || 0).toFixed(2),
-        'Due': Math.max(0, (bill.total || 0) - (bill.paidAmount || 0)).toFixed(2),
-        'Payment': (bill.paymentMethod || 'cash').toUpperCase()
-      };
+          'Bill No.': bill.billNumber || '',
+          'Date & Time': dateTimeStr,
+          'Customer': bill.customerName || 'Walk-in Customer',
+          'Type': (bill.customerType || 'external').toUpperCase(),
+          'Contact': bill.customerPhone || '',
+          'Items': bill.itemCount || 0,
+          'Subtotal': (bill.subtotal || 0).toFixed(2),
+          'Discount': bill.discountType === 'percentage' ? `${bill.discountValue}%` : `₹${(bill.discountAmount || 0).toFixed(2)}`,
+          'Tax': (bill.tax || 0).toFixed(2),
+          'Total': (bill.total || 0).toFixed(2),
+          'Paid': (bill.paidAmount || 0).toFixed(2),
+          'Due': Math.max(0, (bill.total || 0) - (bill.paidAmount || 0)).toFixed(2),
+          'Payment': (bill.paymentMethod || 'cash').toUpperCase()
+        };
       });
 
       const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -1361,7 +1361,7 @@ const VisitBillPage = () => {
     }
 
     const printHTML = generateBillHTML(bill, stateTaxType);
-    
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -2287,67 +2287,67 @@ const VisitBillPage = () => {
                     </td>
                     <td style={styles.td}>
                       <div style={styles.actionsRow}>
-                      <button
-                        style={{ ...styles.actionButton, backgroundColor: '#3b82f6', color: 'white', marginRight: '4px' }}
-                        onClick={() => fetchBillDetails(bill.id)}
-                        title="View Details"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#2563eb';
-                          e.currentTarget.style.transform = 'scale(1.05)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#3b82f6';
-                          e.currentTarget.style.transform = 'scale(1)';
-                        }}
-                      >
-                        <Eye size={14} />
-                      </button>
-                      <button
-                        style={{ ...styles.actionButton, backgroundColor: '#059669', color: 'white', marginRight: '4px' }}
-                        onClick={() => fetchBillDetails(bill.id, true)}
-                        title="Print Bill"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#047857';
-                          e.currentTarget.style.transform = 'scale(1.05)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#059669';
-                          e.currentTarget.style.transform = 'scale(1)';
-                        }}
-                      >
-                        <Printer size={14} />
-                      </button>
-                      <button
-                        style={{
-                          ...styles.whatsappButton,
-                          opacity: whatsappStatus[bill.id] === 'sending' ? 0.7 : 1,
-                          cursor: whatsappStatus[bill.id] === 'sending' ? 'wait' : 'pointer',
-                          backgroundColor: whatsappStatus[bill.id] === 'sent' ? '#059669' : '#25D366'
-                        }}
-                        onClick={() => handleWhatsAppShare(bill)}
-                        title="Share on WhatsApp"
-                        disabled={whatsappStatus[bill.id] === 'sending'}
-                        onMouseEnter={(e) => {
-                          if (!whatsappStatus[bill.id]) {
-                            e.currentTarget.style.backgroundColor = '#128C7E';
+                        <button
+                          style={{ ...styles.actionButton, backgroundColor: '#3b82f6', color: 'white', marginRight: '4px' }}
+                          onClick={() => fetchBillDetails(bill.id)}
+                          title="View Details"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#2563eb';
                             e.currentTarget.style.transform = 'scale(1.05)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!whatsappStatus[bill.id]) {
-                            e.currentTarget.style.backgroundColor = '#25D366';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#3b82f6';
                             e.currentTarget.style.transform = 'scale(1)';
-                          }
-                        }}
-                      >
-                        {whatsappStatus[bill.id] === 'sending' ? (
-                          <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                        ) : whatsappStatus[bill.id] === 'sent' ? (
-                          <CheckCircle size={14} />
-                        ) : (
-                          <MessageCircle size={14} />
-                        )}
-                      </button>
+                          }}
+                        >
+                          <Eye size={14} />
+                        </button>
+                        <button
+                          style={{ ...styles.actionButton, backgroundColor: '#059669', color: 'white', marginRight: '4px' }}
+                          onClick={() => fetchBillDetails(bill.id, true)}
+                          title="Print Bill"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#047857';
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#059669';
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                        >
+                          <Printer size={14} />
+                        </button>
+                        <button
+                          style={{
+                            ...styles.whatsappButton,
+                            opacity: whatsappStatus[bill.id] === 'sending' ? 0.7 : 1,
+                            cursor: whatsappStatus[bill.id] === 'sending' ? 'wait' : 'pointer',
+                            backgroundColor: whatsappStatus[bill.id] === 'sent' ? '#059669' : '#25D366'
+                          }}
+                          onClick={() => handleWhatsAppShare(bill)}
+                          title="Share on WhatsApp"
+                          disabled={whatsappStatus[bill.id] === 'sending'}
+                          onMouseEnter={(e) => {
+                            if (!whatsappStatus[bill.id]) {
+                              e.currentTarget.style.backgroundColor = '#128C7E';
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!whatsappStatus[bill.id]) {
+                              e.currentTarget.style.backgroundColor = '#25D366';
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }
+                          }}
+                        >
+                          {whatsappStatus[bill.id] === 'sending' ? (
+                            <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                          ) : whatsappStatus[bill.id] === 'sent' ? (
+                            <CheckCircle size={14} />
+                          ) : (
+                            <MessageCircle size={14} />
+                          )}
+                        </button>
                       </div>
                     </td>
                   </tr>
