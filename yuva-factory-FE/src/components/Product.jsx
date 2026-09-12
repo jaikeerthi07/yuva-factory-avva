@@ -23,7 +23,7 @@ export default function ItemsPage() {
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  
+
   // Custom HSN Dropdown States
   const [showHsnDropdown, setShowHsnDropdown] = useState(false);
   const [filteredHsnCodes, setFilteredHsnCodes] = useState(ALL_HSN_CODES);
@@ -131,7 +131,7 @@ export default function ItemsPage() {
     try {
       const res = await fetch((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/suppliers-mgmt-data");
       const data = await res.json();
-      
+
       let allSupplierItems = [];
       if (data.success && data.suppliers) {
         data.suppliers.forEach(supplier => {
@@ -171,7 +171,7 @@ export default function ItemsPage() {
         sellPrice: parseFloat(rm.sell_price || rm.sellPrice || rm.buy_price || rm.buyPrice || 0),
         quantity: parseInt(rm.quantity || 1),
       };
-      
+
       const createRes = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -182,7 +182,7 @@ export default function ItemsPage() {
         // Automatically remove from raw materials so it doesn't show there anymore
         if (rm.id) {
           try {
-            await fetch(${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/items/${rm.id}`, {
+            await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/items/${rm.id}`, {
               method: "DELETE",
               credentials: "include",
             });
@@ -329,7 +329,7 @@ export default function ItemsPage() {
     // Use raw values for calculation if available, otherwise fallback to API field names
     const sellRaw = item.sellPrice !== undefined ? item.sellPrice : item.sell_price;
     const buyRaw = item.buyPrice !== undefined ? item.buyPrice : item.buy_price;
-    
+
     const sell = parseFloat(sellRaw) || 0;
     const buy = parseFloat(buyRaw) || 0;
     const qty = parseInt(item.quantity) || 0;
@@ -339,13 +339,13 @@ export default function ItemsPage() {
       ...item,
       // Normalize model/flavour key for consistent UI display
       model: item.model || item.Model || item.product_model || item.Flavour || "",
-      
+
       // Normalize HSN key - explicitly convert to string to preserve leading zeros
       watts: (item.watts || item.hsn || item.hsn_code || item.HSN || "").toString(),
-      
+
       // Normalize Type key
       type: item.type || item.product_type || item.Type || "",
-      
+
       amount,
       // We don't overwrite buyPrice/sellPrice/quantity here to avoid 
       // interfering with the input field's raw string state (e.g. decimals)
@@ -368,7 +368,7 @@ export default function ItemsPage() {
 
   // ================= EDIT ITEM FUNCTIONS =================
   const handleEditClick = (item) => {
-    setEditingItem({ 
+    setEditingItem({
       ...item,
       model: item.model || item.Model || ""
     });
@@ -383,8 +383,8 @@ export default function ItemsPage() {
 
     // If changing HSN (watts), filter suggestions
     if (field === 'watts') {
-      const filtered = ALL_HSN_CODES.filter(hsn => 
-        hsn.code.toLowerCase().includes(value.toLowerCase()) || 
+      const filtered = ALL_HSN_CODES.filter(hsn =>
+        hsn.code.toLowerCase().includes(value.toLowerCase()) ||
         hsn.label.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredHsnCodes(filtered);
@@ -1360,8 +1360,8 @@ export default function ItemsPage() {
               {showHsnDropdown && filteredHsnCodes.length > 0 && (
                 <div style={modalStyles.dropdown}>
                   {filteredHsnCodes.map(hsn => (
-                    <div 
-                      key={hsn.code} 
+                    <div
+                      key={hsn.code}
                       style={modalStyles.dropdownItem}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#374151"}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
@@ -1378,7 +1378,7 @@ export default function ItemsPage() {
               )}
               {/* Global click listener to close dropdown */}
               {showHsnDropdown && (
-                <div 
+                <div
                   style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}
                   onClick={() => setShowHsnDropdown(false)}
                 />
@@ -1896,7 +1896,7 @@ export default function ItemsPage() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
               {loadingRawMaterials ? (
                 <div style={{ padding: "40px", textAlign: "center", color: "#9ca3af" }}>Loading raw materials...</div>
@@ -1916,7 +1916,7 @@ export default function ItemsPage() {
                     {rawMaterials.map((rm) => (
                       <tr key={`${rm.id}-${Math.random()}`}>
                         <td style={styles.td}>
-                          {rm.name} <br/>
+                          {rm.name} <br />
                           <span style={{ fontSize: "11px", color: "#6366f1" }}>from {rm.supplierCompany}</span>
                         </td>
                         <td style={styles.td}>{rm.quantity}</td>
@@ -1926,7 +1926,7 @@ export default function ItemsPage() {
                             style={{ ...styles.button, ...styles.primaryButton, padding: "4px 8px", fontSize: "12px" }}
                             onClick={() => importRawMaterial(rm)}
                           >
-                            <Plus size={14} style={{marginRight: "4px"}} /> Add
+                            <Plus size={14} style={{ marginRight: "4px" }} /> Add
                           </button>
                         </td>
                       </tr>
@@ -1935,7 +1935,7 @@ export default function ItemsPage() {
                 </table>
               )}
             </div>
-            
+
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
               <button
                 style={{ ...styles.button, ...styles.cancelButton }}

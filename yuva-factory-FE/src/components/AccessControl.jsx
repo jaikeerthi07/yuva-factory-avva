@@ -62,11 +62,11 @@ const AccessControl = () => {
 
         // Manager/HR Operational Logic
         if (operationalSubmodules.includes(sub)) {
-           if (baseRole === "Manager" || baseRole === "HR") {
-             p.view = true;
-             p.update = baseRole === "Manager";
-             p.create = baseRole === "HR";
-           }
+          if (baseRole === "Manager" || baseRole === "HR") {
+            p.view = true;
+            p.update = baseRole === "Manager";
+            p.create = baseRole === "HR";
+          }
         }
 
         // Dependency Logic (Apply at the end)
@@ -96,7 +96,7 @@ const AccessControl = () => {
         base_template: baseRole,
         permissions: userPermissions
       });
-      
+
       setSuccessMessage(`User Type "${userTypeName}" created successfully!`);
       setUserTypeName("");
       fetchUserTypes();
@@ -111,9 +111,9 @@ const AccessControl = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user type?")) return;
-    
+
     try {
-      await axios.delete(${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/user-types/${id}`);
+      await axios.delete(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/user-types/${id}`);
       fetchUserTypes();
     } catch (error) {
       alert("Failed to delete user type");
@@ -379,33 +379,33 @@ const AccessControl = () => {
           <FaInfoCircle color="#4da6ff" size={24} />
           <div style={{ fontSize: "13px", lineHeight: "1.6", color: "#94a3b8" }}>
             <strong style={{ color: "#4da6ff", display: "block", marginBottom: "4px" }}>System Policy Note</strong>
-            Permissions in this system are automatically assigned based on the selected user type and predefined access policies. 
+            Permissions in this system are automatically assigned based on the selected user type and predefined access policies.
             Manual modification is restricted to ensure consistency, security, and role-based hierarchy enforcement.
           </div>
         </div>
 
         <div style={styles.actionPanel}>
-           <div>
-             <button 
-               style={{ ...styles.btn, ...styles.btnOutline }}
-               onClick={() => setShowPreview(!showPreview)}
-             >
-               <FaEye /> {showPreview ? "Hide JSON" : "Preview Permissions"}
-             </button>
-           </div>
-           
-           <button 
-             style={{ 
-               ...styles.btn, 
-               ...styles.btnPrimary,
-               opacity: isSaving ? 0.7 : 1
-             }}
-             disabled={isSaving}
-             onClick={handleSave}
-           >
-             {isSaving ? <FaSyncAlt className="spin" /> : <FaSave />}
-             Save System Logic
-           </button>
+          <div>
+            <button
+              style={{ ...styles.btn, ...styles.btnOutline }}
+              onClick={() => setShowPreview(!showPreview)}
+            >
+              <FaEye /> {showPreview ? "Hide JSON" : "Preview Permissions"}
+            </button>
+          </div>
+
+          <button
+            style={{
+              ...styles.btn,
+              ...styles.btnPrimary,
+              opacity: isSaving ? 0.7 : 1
+            }}
+            disabled={isSaving}
+            onClick={handleSave}
+          >
+            {isSaving ? <FaSyncAlt className="spin" /> : <FaSave />}
+            Save System Logic
+          </button>
         </div>
 
         {showPreview && (
@@ -420,10 +420,10 @@ const AccessControl = () => {
             whiteSpace: "pre-wrap",
             border: "1px solid rgba(77, 166, 255, 0.3)"
           }}>
-            {JSON.stringify({ 
-              user_type: userTypeName || "New Role", 
+            {JSON.stringify({
+              user_type: userTypeName || "New Role",
               base_template: baseRole,
-              permissions: userPermissions 
+              permissions: userPermissions
             }, null, 2)}
           </div>
         )}
@@ -442,7 +442,7 @@ const AccessControl = () => {
                 <div style={{ fontWeight: "600", color: "#f8fafc" }}>{type.name}</div>
                 <div style={{ fontSize: "12px", color: "#64748b" }}>Template: {type.base_template || "N/A"}</div>
               </div>
-              <button 
+              <button
                 onClick={() => handleDelete(type.id)}
                 style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "8px" }}
                 title="Delete Role"
