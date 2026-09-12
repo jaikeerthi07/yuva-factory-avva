@@ -6,11 +6,11 @@ const ItemsListPage = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Filter states
   const [selectedSupplier, setSelectedSupplier] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Date filters
   const [dateFilterType, setDateFilterType] = useState('all'); // 'all', 'month', 'date', 'range'
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -18,16 +18,16 @@ const ItemsListPage = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [dateRangeStart, setDateRangeStart] = useState('');
   const [dateRangeEnd, setDateRangeEnd] = useState('');
-  
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  
+
   // PDF export state
   const [exportLoading, setExportLoading] = useState(false);
-  
+
   // Base URL for API
-  const BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'';
+  const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   // Get current date for defaults
   const currentDate = new Date();
@@ -68,13 +68,13 @@ const ItemsListPage = () => {
         credentials: 'include',
         mode: 'cors'
       });
-      
+
       if (!response.ok) throw new Error('Failed to fetch data');
-      
+
       const data = await response.json();
       if (data.success) {
         setSuppliers(data.suppliers);
-        
+
         // Extract all items from suppliers with created_at dates
         const allItems = [];
         data.suppliers.forEach(supplier => {
@@ -125,9 +125,9 @@ const ItemsListPage = () => {
   // Check if item matches date filters
   const matchesDateFilter = (item) => {
     if (dateFilterType === 'all') return true;
-    
+
     const itemDate = new Date(item.created_at);
-    
+
     switch (dateFilterType) {
       case 'month':
         if (!selectedMonth || !selectedYear) return true;
@@ -135,7 +135,7 @@ const ItemsListPage = () => {
           itemDate.getMonth() + 1 === parseInt(selectedMonth) &&
           itemDate.getFullYear() === parseInt(selectedYear)
         );
-      
+
       case 'date':
         if (!selectedDate) return true;
         const filterDate = new Date(selectedDate);
@@ -144,14 +144,14 @@ const ItemsListPage = () => {
           itemDate.getMonth() === filterDate.getMonth() &&
           itemDate.getFullYear() === filterDate.getFullYear()
         );
-      
+
       case 'range':
         if (!dateRangeStart || !dateRangeEnd) return true;
         const start = new Date(dateRangeStart);
         const end = new Date(dateRangeEnd);
         end.setHours(23, 59, 59, 999); // Include the entire end day
         return itemDate >= start && itemDate <= end;
-      
+
       default:
         return true;
     }
@@ -164,12 +164,12 @@ const ItemsListPage = () => {
       if (selectedSupplier !== 'all' && item.supplier_id !== parseInt(selectedSupplier)) {
         return false;
       }
-      
+
       // Date filter
       if (!matchesDateFilter(item)) {
         return false;
       }
-      
+
       // Search term
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -180,7 +180,7 @@ const ItemsListPage = () => {
           item.id?.toString().includes(searchLower)
         );
       }
-      
+
       return true;
     });
   };
@@ -211,12 +211,12 @@ const ItemsListPage = () => {
   // Export to PDF function
   const exportToPDF = () => {
     setExportLoading(true);
-    
+
     const filteredItems = getSortedItems();
-    
+
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
-    
+
     // Generate HTML content for PDF with dark theme
     let htmlContent = `
       <!DOCTYPE html>
@@ -342,7 +342,7 @@ const ItemsListPage = () => {
         <div class="filters-applied">
           <h3>📊 Applied Filters:</h3>
     `;
-    
+
     // Add filter tags
     if (selectedSupplier !== 'all') {
       const supplier = suppliers.find(s => s.id === parseInt(selectedSupplier));
@@ -364,7 +364,7 @@ const ItemsListPage = () => {
     if (dateFilterType === 'all' && selectedSupplier === 'all' && !searchTerm) {
       htmlContent += `<span class="filter-tag">All Items</span>`;
     }
-    
+
     htmlContent += `
         </div>
         
@@ -381,7 +381,7 @@ const ItemsListPage = () => {
           </thead>
           <tbody>
     `;
-    
+
     filteredItems.forEach(item => {
       htmlContent += `
         <tr>
@@ -394,7 +394,7 @@ const ItemsListPage = () => {
         </tr>
       `;
     });
-    
+
     htmlContent += `
           </tbody>
         </table>
@@ -411,11 +411,11 @@ const ItemsListPage = () => {
       </body>
       </html>
     `;
-    
+
     printWindow.document.write(htmlContent);
     printWindow.document.close();
     printWindow.focus();
-    
+
     setTimeout(() => {
       setExportLoading(false);
     }, 1000);
@@ -719,8 +719,8 @@ const ItemsListPage = () => {
           </h1>
           <p style={styles.subtitle}>Track and manage all items</p>
         </div>
-        
-        <button 
+
+        <button
           style={styles.exportButton}
           onClick={exportToPDF}
           onMouseEnter={(e) => e.target.style.backgroundColor = '#1d4ed8'}
@@ -782,7 +782,7 @@ const ItemsListPage = () => {
         <div style={styles.filterRow}>
           <div style={styles.filterGroup}>
             <label style={styles.label}>Supplier</label>
-            <select 
+            <select
               style={styles.select}
               value={selectedSupplier}
               onChange={(e) => setSelectedSupplier(e.target.value)}
@@ -947,8 +947,8 @@ const ItemsListPage = () => {
               </thead>
               <tbody>
                 {currentItems.map(item => (
-                  <tr 
-                    key={item.id} 
+                  <tr
+                    key={item.id}
                     style={styles.tr}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#334155'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -975,7 +975,7 @@ const ItemsListPage = () => {
                     </td>
                     <td style={styles.td}>
                       {item.attachment ? (
-                        <a 
+                        <a
                           href={getAttachmentUrl(item.attachment)}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -1013,7 +1013,7 @@ const ItemsListPage = () => {
               >
                 ←
               </button>
-              
+
               {[...Array(totalPages)].map((_, i) => {
                 const pageNumber = i + 1;
                 // Show first, last, and pages around current
@@ -1052,7 +1052,7 @@ const ItemsListPage = () => {
                 }
                 return null;
               })}
-              
+
               <button
                 style={{
                   ...styles.pageButton,

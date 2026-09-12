@@ -5,10 +5,10 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { 
-  Search, 
-  Eye, 
-  Download, 
+import {
+  Search,
+  Eye,
+  Download,
   RefreshCw,
   X,
   ChevronLeft,
@@ -24,18 +24,18 @@ const BillItemsPage = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [showItemModal, setShowItemModal] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Simple statistics - just count
   const [totalItems, setTotalItems] = useState(0);
 
-  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api';
+  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + '/api';
 
   // Load items on component mount
   useEffect(() => {
@@ -69,26 +69,26 @@ const BillItemsPage = () => {
   const fetchAllBillItems = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       // First fetch all bills
       const response = await axios.get(`${API_BASE_URL}/billing/bills`);
-      
+
       let billsData = [];
       if (response.data && Array.isArray(response.data.bills)) {
         billsData = response.data.bills;
       } else if (Array.isArray(response.data)) {
         billsData = response.data;
       }
-      
+
       // Extract all items from bills
       let allItems = [];
-      
+
       for (const bill of billsData) {
         try {
           const detailResponse = await axios.get(`${API_BASE_URL}/billing/bills/${bill.id}`);
           const detailedBill = detailResponse.data;
-          
+
           if (detailedBill.items && Array.isArray(detailedBill.items)) {
             const itemsWithBillInfo = detailedBill.items.map(item => ({
               id: item.id,
@@ -110,7 +110,7 @@ const BillItemsPage = () => {
           console.error(`Error fetching details for bill ${bill.id}:`, err);
         }
       }
-      
+
       setItems(allItems);
       setFilteredItems(allItems);
       showMessage("success", `${allItems.length} items loaded successfully!`);
@@ -127,7 +127,7 @@ const BillItemsPage = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/billing/bills/${billId}`);
       const bill = response.data;
-      
+
       const item = bill.items?.find(i => i.id === itemId);
       if (item) {
         setSelectedItem({
@@ -154,7 +154,7 @@ const BillItemsPage = () => {
         const productModel = item.product_model || '';
         const productType = item.product_type || '';
         const itemId = item.id ? item.id.toString() : '';
-        
+
         const searchLower = searchTerm.toLowerCase();
         return (
           productName.toLowerCase().includes(searchLower) ||
@@ -194,8 +194,8 @@ const BillItemsPage = () => {
       XLSX.utils.book_append_sheet(workbook, worksheet, "Bill Items");
 
       const wscols = [
-        { wch: 10 }, { wch: 12 }, { wch: 25 }, 
-        { wch: 15 }, { wch: 15 }, { wch: 12 }, 
+        { wch: 10 }, { wch: 12 }, { wch: 25 },
+        { wch: 15 }, { wch: 15 }, { wch: 12 },
         { wch: 10 }, { wch: 12 }
       ];
       worksheet['!cols'] = wscols;
@@ -224,23 +224,23 @@ const BillItemsPage = () => {
       const doc = new jsPDF({
         orientation: 'landscape'
       });
-      
+
       doc.setFontSize(18);
       doc.setTextColor(0, 0, 0);
       doc.text('Items List', 14, 22);
-      
+
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
-      
+
       doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
       doc.text(`Total Items: ${filteredItems.length}`, 14, 40);
-      
+
       const tableColumn = [
         'ID', 'Date', 'Product', 'Flavour', 'Type', 'Price', 'Qty', 'Total'
       ];
-      
+
       const tableRows = filteredItems.map(item => [
         item.id || '',
         item.billDate ? new Date(item.billDate).toLocaleDateString() : '',
@@ -251,7 +251,7 @@ const BillItemsPage = () => {
         item.quantity || 0,
         `₹${item.total || 0}`
       ]);
-      
+
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
@@ -260,7 +260,7 @@ const BillItemsPage = () => {
         headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255] },
         alternateRowStyles: { fillColor: [240, 240, 240] },
       });
-      
+
       const date = new Date().toISOString().split('T')[0];
       doc.save(`Items_List_${date}.pdf`);
       showMessage("success", "PDF export successful!");
@@ -636,7 +636,7 @@ const BillItemsPage = () => {
             <Package size={32} color="#6366f1" />
             Items List
           </h1>
-          <button 
+          <button
             style={styles.refreshButton}
             onClick={fetchAllBillItems}
             title="Refresh"
@@ -646,14 +646,14 @@ const BillItemsPage = () => {
         </div>
 
         <div style={styles.buttonGroup}>
-          <button 
-            style={{...styles.button, ...styles.infoButton}} 
+          <button
+            style={{ ...styles.button, ...styles.infoButton }}
             onClick={handleExportExcel}
           >
             <Download size={16} /> Excel
           </button>
-          <button 
-            style={{...styles.button, ...styles.successButton}} 
+          <button
+            style={{ ...styles.button, ...styles.successButton }}
             onClick={handleExportPDF}
           >
             <Download size={16} /> PDF
@@ -688,7 +688,7 @@ const BillItemsPage = () => {
           />
         </div>
 
-        <button 
+        <button
           style={styles.filterButton}
           onClick={resetFilters}
         >
@@ -698,8 +698,8 @@ const BillItemsPage = () => {
 
       {/* Items Table */}
       <div style={styles.tableContainer}>
-        {error && <div style={{padding: '20px', color: '#f87171', textAlign: 'center'}}>{error}</div>}
-        
+        {error && <div style={{ padding: '20px', color: '#f87171', textAlign: 'center' }}>{error}</div>}
+
         <table style={styles.table}>
           <thead>
             <tr>
@@ -770,7 +770,7 @@ const BillItemsPage = () => {
           <div style={styles.paginationInfo}>
             Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredItems.length)} of {filteredItems.length} items
           </div>
-          
+
           <div style={styles.paginationControls}>
             <button
               onClick={goToPreviousPage}
@@ -782,7 +782,7 @@ const BillItemsPage = () => {
             >
               <ChevronLeft size={16} />
             </button>
-            
+
             <div style={styles.pageNumbers}>
               {[...Array(totalPages)].map((_, index) => {
                 const pageNumber = index + 1;
@@ -812,7 +812,7 @@ const BillItemsPage = () => {
                 return null;
               })}
             </div>
-            
+
             <button
               onClick={goToNextPage}
               disabled={currentPage === totalPages}
@@ -834,13 +834,13 @@ const BillItemsPage = () => {
             <button style={styles.modalClose} onClick={() => setShowItemModal(false)}>
               <X size={20} />
             </button>
-            
+
             <h2 style={styles.modalTitle}>Item Details</h2>
-            
+
             <div style={styles.modalSection}>
               <div style={styles.modalLabel}>Item ID</div>
               <div style={styles.modalValue}>{selectedItem.id}</div>
-              
+
               <div style={styles.modalLabel}>Date</div>
               <div style={styles.modalValue}>{new Date(selectedItem.billDate).toLocaleString()}</div>
             </div>
@@ -850,27 +850,27 @@ const BillItemsPage = () => {
             <div style={styles.modalSection}>
               <div style={styles.modalLabel}>Product Name</div>
               <div style={styles.modalValue}>{selectedItem.product_name}</div>
-              
+
               {selectedItem.product_model && (
                 <>
                   <div style={styles.modalLabel}>Flavour</div>
                   <div style={styles.modalValue}>{selectedItem.product_model}</div>
                 </>
               )}
-              
+
               {selectedItem.product_type && (
                 <>
                   <div style={styles.modalLabel}>Type</div>
                   <div style={styles.modalValue}>{selectedItem.product_type}</div>
                 </>
               )}
-              
+
               <div style={styles.modalLabel}>Price per Unit</div>
               <div style={styles.modalValue}>₹{selectedItem.sell_price}</div>
-              
+
               <div style={styles.modalLabel}>Quantity</div>
               <div style={styles.modalValue}>{selectedItem.quantity}</div>
-              
+
               <div style={styles.modalLabel}>Total Amount</div>
               <div style={styles.modalValue}><strong>₹{selectedItem.total}</strong></div>
             </div>

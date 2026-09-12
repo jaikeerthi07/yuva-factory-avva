@@ -10,12 +10,12 @@ const Bill = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [barcode, setBarcode] = useState('');
-  
+
   // Bill information
   const [billNumber, setBillNumber] = useState('');
   const [currentDate, setCurrentDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
-  
+
   // Customer information
   const [customerName, setCustomerName] = useState('Walk-in Customer');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -25,36 +25,36 @@ const Bill = () => {
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerType, setCustomerType] = useState('external'); // 'internal' or 'external'
   const [customerDiscount, setCustomerDiscount] = useState(0); // Default discount for customer type
-  
+
   // Vehicle information
   const [vehicleName, setVehicleName] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
-  
+
   // Company information (from selected company)
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [showCompanySelector, setShowCompanySelector] = useState(false);
-  
+
   // User information (bill created by)
   const [createdBy, setCreatedBy] = useState('');
-  
+
   // Discount information
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('percentage'); // 'percentage' or 'fixed'
   const [manualDiscount, setManualDiscount] = useState(false); // Track if discount is manually set
-  
+
   // Tax information
   const [tax, setTax] = useState(0);
   const [taxType, setTaxType] = useState('percentage'); // 'percentage' or 'fixed'
   const [billType, setBillType] = useState('inclusive-tax'); // 'inclusive-tax' or 'exclusive-tax'
   const [applyFreeQty, setApplyFreeQty] = useState(false);
-  
+
   // Payment information
   const [paidAmount, setPaidAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [isAdminUser, setIsAdminUser] = useState(false);
-  
+
   // Payment details for different methods
   const [cashReceived, setCashReceived] = useState(0);
   const [cardNumber, setCardNumber] = useState('');
@@ -63,7 +63,7 @@ const Bill = () => {
   const [transactionId, setTransactionId] = useState('');
   const [bankName, setBankName] = useState('');
   const [chequeNumber, setChequeNumber] = useState('');
-  
+
   // UI states
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -143,7 +143,7 @@ const Bill = () => {
 
   // Create axios instance with credentials
   const api = axios.create({
-    baseURL: (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api',
+    baseURL: (process.env.REACT_APP_API_URL || "http://localhost:5000") + '/api',
     withCredentials: true,
     headers: {
       'Content-Type': 'application/json'
@@ -1059,13 +1059,13 @@ const Bill = () => {
     const year = now.getFullYear().toString().slice(-2);
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
-    
+
     const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let random = '';
     for (let i = 0; i < 8; i++) {
       random += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
     }
-    
+
     setBillNumber(`BT-${year}${month}${day}-${random}`);
   };
 
@@ -1103,7 +1103,7 @@ const Bill = () => {
     generateBillNumber();
     updateDateTime();
     loadLogoDataUrl();
-    
+
     const interval = setInterval(updateDateTime, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -1446,7 +1446,7 @@ const Bill = () => {
       }
     `;
     document.head.appendChild(style);
-    
+
     return () => {
       document.head.removeChild(style);
     };
@@ -1455,7 +1455,7 @@ const Bill = () => {
   // Clear payment method specific fields when method changes
   useEffect(() => {
     setShowPaymentDetails(true);
-    switch(paymentMethod) {
+    switch (paymentMethod) {
       case 'cash':
         setCardNumber('');
         setCardHolderName('');
@@ -1493,7 +1493,7 @@ const Bill = () => {
   // Fetch customer by phone
   const fetchCustomerByPhone = async (phone) => {
     if (phone.length < 10) return;
-    
+
     setFetchingCustomer(true);
     try {
       const response = await api.get(`/billing/customer/${phone}`);
@@ -1525,10 +1525,10 @@ const Bill = () => {
   // Search products API call
   const searchProducts = async () => {
     if (!isAuthenticated) return;
-    
+
     setSearchLoading(true);
     setError('');
-    
+
     try {
       const response = await api.get(`/billing/search-products?q=${encodeURIComponent(searchQuery)}`);
       setSearchResults(response.data);
@@ -1549,10 +1549,10 @@ const Bill = () => {
   const getProductByBarcode = async () => {
     if (!isAuthenticated) return;
     if (!barcode.trim()) return;
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await api.get(`/billing/product/barcode/${barcode}`);
       addProductToBill(response.data);
@@ -1572,16 +1572,16 @@ const Bill = () => {
   // Add product to bill
   const addProductToBill = (product) => {
     const existingProduct = selectedProducts.find(p => p.id === product.id && p.source === product.source);
-    
+
     if (existingProduct) {
       if (existingProduct.quantity < product.quantity) {
         const updatedProducts = selectedProducts.map(p =>
           p.id === product.id && p.source === product.source
-            ? { 
-                ...p, 
-                quantity: p.quantity + 1, 
-                total: (p.quantity + 1) * p.sellPrice 
-              }
+            ? {
+              ...p,
+              quantity: p.quantity + 1,
+              total: (p.quantity + 1) * p.sellPrice
+            }
             : p
         );
         setSelectedProducts(updatedProducts);
@@ -1613,7 +1613,7 @@ const Bill = () => {
         setTimeout(() => setError(''), 3000);
       }
     }
-    
+
     setSearchQuery('');
     setSearchResults([]);
   };
@@ -1621,10 +1621,10 @@ const Bill = () => {
   // Update quantity
   const updateQuantity = (productId, productSource, newQuantity) => {
     const product = selectedProducts.find(p => p.id === productId && p.source === productSource);
-    
+
     if (product) {
       newQuantity = parseInt(newQuantity) || 0;
-      
+
       if (newQuantity >= 0 && newQuantity <= product.maxQuantity) {
         const updatedProducts = selectedProducts.map(p =>
           p.id === productId && p.source === productSource
@@ -1632,7 +1632,7 @@ const Bill = () => {
             : p
         );
         setSelectedProducts(updatedProducts);
-        
+
         if (newQuantity === 0) {
           setSuccess(`${product.name} quantity set to 0`);
         } else {
@@ -1672,7 +1672,7 @@ const Bill = () => {
   const calculateDiscountAmount = () => {
     const subtotal = calculateSubtotal();
     if (subtotal === 0) return 0;
-    
+
     if (discountType === 'percentage') {
       return (subtotal * discount) / 100;
     }
@@ -1683,11 +1683,11 @@ const Bill = () => {
     if (!isTaxBill) {
       return 0;
     }
-    
+
     const subtotal = calculateSubtotal();
     const discountAmount = calculateDiscountAmount();
     const afterDiscount = subtotal - discountAmount;
-    
+
     if (afterDiscount <= 0) return 0;
 
     if (isExclusiveTaxBill) {
@@ -1757,7 +1757,7 @@ const Bill = () => {
     setManualDiscount(true);
     const numValue = parseFloat(value) || 0;
     const subtotal = calculateSubtotal();
-    
+
     if (discountType === 'percentage') {
       if (numValue > 100) {
         setError('Percentage discount cannot exceed 100%');
@@ -1777,7 +1777,7 @@ const Bill = () => {
         setDiscount(numValue);
       }
     }
-    
+
     setTimeout(() => setError(''), 3000);
   };
 
@@ -1786,7 +1786,7 @@ const Bill = () => {
     setManualDiscount(true);
     const subtotal = calculateSubtotal();
     setDiscountType(type);
-    
+
     if (type === 'percentage') {
       if (discountType === 'fixed' && subtotal > 0) {
         const percentage = (discount / subtotal) * 100;
@@ -1841,7 +1841,7 @@ const Bill = () => {
     }
 
     const activeProducts = selectedProducts.filter(p => p.quantity > 0);
-    
+
     if (activeProducts.length === 0) {
       setError('No items with quantity > 0 to save!');
       return null;
@@ -1902,7 +1902,7 @@ const Bill = () => {
         });
         setShowWhatsApp(true);
         setBillSaved(true);
-        
+
         return {
           billId: response.data.billId,
           billNumber: response.data.billNumber
@@ -2533,16 +2533,16 @@ billTableHeader: {
                     <span style="grid-column: 1 / -1; text-align: center;">--- No items in bill ---</span>
                   </div>
                 ` : activeProducts.map((product, idx) => {
-                  const rate = parseFloat(product.sellPrice) || 0;
-                  const qty = product.quantity || 0;
-                  const freeQty = getFreeQuantity(qty);
-                  const totalItemTax = getLineTaxAmount(product);
-                  const cgstAmt = (totalItemTax / 2).toFixed(2);
-                  const sgstAmt = (totalItemTax / 2).toFixed(2);
-                  const igstAmt = totalItemTax.toFixed(2);
-                  const itemTotalAmt = getLineTotalAmount(product);
+      const rate = parseFloat(product.sellPrice) || 0;
+      const qty = product.quantity || 0;
+      const freeQty = getFreeQuantity(qty);
+      const totalItemTax = getLineTaxAmount(product);
+      const cgstAmt = (totalItemTax / 2).toFixed(2);
+      const sgstAmt = (totalItemTax / 2).toFixed(2);
+      const igstAmt = totalItemTax.toFixed(2);
+      const itemTotalAmt = getLineTotalAmount(product);
 
-                  return `
+      return `
                     <div class="bill-item">
                       <span>${idx + 1}</span>
                       <span class="bill-item-name">
@@ -2557,7 +2557,7 @@ billTableHeader: {
                       <span>${itemTotalAmt.toFixed(2)}</span>
                     </div>
                   `;
-                }).join('')}
+    }).join('')}
               </div>
             </div>
             
@@ -2732,7 +2732,7 @@ billTableHeader: {
     }
 
     const savedData = await saveBillToDatabase();
-    
+
     if (savedData) {
       downloadBill();
     }
@@ -2891,7 +2891,7 @@ billTableHeader: {
     }
 
     const cleanPhone = customerPhone.replace(/\D/g, '');
-    
+
     if (cleanPhone.length < 10) {
       setError('Please enter a valid 10-digit phone number');
       setTimeout(() => setError(''), 3000);
@@ -2925,7 +2925,7 @@ billTableHeader: {
     message += `\n`;
     message += `════════════════════════\n`;
     message += `*ITEMS:*\n`;
-    
+
     activeProducts.forEach((p, idx) => {
       const freeQty = getFreeQuantity(p.quantity || 0);
       message += `${idx + 1}. ${p.name.substring(0, 20)}${p.name.length > 20 ? '...' : ''}\n`;
@@ -2933,7 +2933,7 @@ billTableHeader: {
       if (freeQty > 0) message += ` + Free ${freeQty}`;
       message += ` = ₹${getLineTotalAmount(p).toFixed(2)}\n`;
     });
-    
+
     message += `════════════════════════\n`;
     message += `*Subtotal:* ₹${subtotal.toFixed(2)}\n`;
     if (discountAmount > 0) message += `*Discount:* -₹${discountAmount.toFixed(2)}\n`;
@@ -2956,7 +2956,7 @@ billTableHeader: {
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
-    
+
     setSuccess('WhatsApp opened with bill details!');
     setTimeout(() => setSuccess(''), 3000);
   };
@@ -3052,13 +3052,13 @@ billTableHeader: {
   // Show login required message if not authenticated
   if (!isAuthenticated) {
     return (
-      <div style={{...styles.container, justifyContent: 'center', alignItems: 'center'}}>
-        <div style={{background: 'white', padding: '48px', borderRadius: '24px', textAlign: 'center', maxWidth: '400px'}}>
-          <div style={{fontSize: '64px', marginBottom: '20px'}}>🔒</div>
-          <h2 style={{marginBottom: '12px', color: '#1e293b'}}>Authentication Required</h2>
-          <p style={{color: '#ef4444', margin: '20px 0'}}>{error || 'Please login to access billing'}</p>
-          <button 
-            style={{...styles.btn, ...styles.btnPrimary, padding: '12px 32px'}}
+      <div style={{ ...styles.container, justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ background: 'white', padding: '48px', borderRadius: '24px', textAlign: 'center', maxWidth: '400px' }}>
+          <div style={{ fontSize: '64px', marginBottom: '20px' }}>🔒</div>
+          <h2 style={{ marginBottom: '12px', color: '#1e293b' }}>Authentication Required</h2>
+          <p style={{ color: '#ef4444', margin: '20px 0' }}>{error || 'Please login to access billing'}</p>
+          <button
+            style={{ ...styles.btn, ...styles.btnPrimary, padding: '12px 32px' }}
             onClick={() => window.location.href = '/login'}
           >
             Go to Login
@@ -3086,9 +3086,9 @@ billTableHeader: {
           </h2>
           <p style={styles.panelSubtitle}>Add products, manage items, and generate invoice</p>
         </div>
-        
+
         <div style={styles.panelContent}>
-          <div style={{marginBottom: '20px'}}>
+          <div style={{ marginBottom: '20px' }}>
             <div style={{ marginTop: '12px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '500', color: '#334155', cursor: 'pointer' }}>
                 <input
@@ -3100,12 +3100,12 @@ billTableHeader: {
               </label>
             </div>
           </div>
-          
+
           {/* Company Selector */}
           {companies.length > 0 && (
             <div style={styles.companySelector}>
-              <div 
-                style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 onClick={() => setShowCompanySelector(!showCompanySelector)}
               >
                 <span>
@@ -3113,7 +3113,7 @@ billTableHeader: {
                     {selectedCompany ? selectedCompany.name : 'Select Company'}
                   </span>
                 </span>
-                <span style={{fontSize: '14px'}}>{showCompanySelector ? '▲' : '▼'}</span>
+                <span style={{ fontSize: '14px' }}>{showCompanySelector ? '▲' : '▼'}</span>
               </div>
               {showCompanySelector && (
                 <div style={styles.companyDropdown}>
@@ -3132,19 +3132,19 @@ billTableHeader: {
               )}
             </div>
           )}
-          
+
           {error && (
-            <div style={{...styles.alert, ...styles.alertError}}>
+            <div style={{ ...styles.alert, ...styles.alertError }}>
               <span>⚠️</span> {error}
             </div>
           )}
-          
+
           {success && (
-            <div style={{...styles.alert, ...styles.alertSuccess}}>
+            <div style={{ ...styles.alert, ...styles.alertSuccess }}>
               <span>✅</span> {success}
             </div>
           )}
-          
+
           <div style={styles.searchSection}>
             <div style={styles.searchBox}>
               <label style={styles.searchLabel}>🔍 Search Products</label>
@@ -3158,9 +3158,9 @@ billTableHeader: {
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                 onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
               />
-              {searchLoading && <div style={{fontSize: '12px', color: '#64748b', marginTop: '8px'}}>Searching...</div>}
+              {searchLoading && <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>Searching...</div>}
             </div>
-            
+
             <div style={styles.barcodeInput}>
               <input
                 type="text"
@@ -3183,7 +3183,7 @@ billTableHeader: {
                 {loading ? 'Adding...' : 'Add Product'}
               </button>
             </div>
-            
+
             {searchResults.length > 0 && (
               <div style={styles.searchResults}>
                 {searchResults.map(product => (
@@ -3207,11 +3207,11 @@ billTableHeader: {
               </div>
             )}
           </div>
-          
+
           <div style={styles.selectedProducts}>
             <div style={styles.selectedProductsTitle}>
               <span>🛒 Bill Items</span>
-              <span style={{fontSize: '13px', color: '#64748b'}}>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>
                 {activeProducts.length} active / {selectedProducts.length} total
               </span>
             </div>
@@ -3220,8 +3220,8 @@ billTableHeader: {
                 <p style={styles.noItems}>No items added yet. Search or scan products to add.</p>
               ) : (
                 selectedProducts.map(product => (
-                  <div 
-                    key={`${product.source || 'product'}-${product.id}`} 
+                  <div
+                    key={`${product.source || 'product'}-${product.id}`}
                     style={{
                       ...styles.selectedItem,
                       ...(product.quantity === 0 ? dynamicStyles.zeroQuantity : {})
@@ -3233,12 +3233,12 @@ billTableHeader: {
                         <span style={styles.itemModel}>{product.model}</span>
                       )}
                       {product.quantity === 0 && (
-                        <span style={{fontSize: '10px', color: '#d97706'}}>(Zero quantity)</span>
+                        <span style={{ fontSize: '10px', color: '#d97706' }}>(Zero quantity)</span>
                       )}
                     </div>
                     <div style={styles.itemPrice}>₹{product.sellPrice}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <button 
+                      <button
                         style={styles.qtyBtn}
                         onClick={() => updateQuantity(product.id, product.source || 'product', Math.max(0, product.quantity - 1))}
                       >-</button>
@@ -3250,11 +3250,11 @@ billTableHeader: {
                         max={product.maxQuantity}
                         onChange={(e) => updateQuantity(product.id, product.source || 'product', e.target.value)}
                       />
-                      <button 
+                      <button
                         onClick={() => updateQuantity(product.id, product.source || 'product', product.quantity + 1)}
                         disabled={product.maxQuantity ? product.quantity >= product.maxQuantity : false}
                         title={product.maxQuantity && product.quantity >= product.maxQuantity ? "Maximum stock reached" : ""}
-                        style={{...styles.qtyBtn, opacity: (product.maxQuantity && product.quantity >= product.maxQuantity) ? 0.5 : 1}}
+                        style={{ ...styles.qtyBtn, opacity: (product.maxQuantity && product.quantity >= product.maxQuantity) ? 0.5 : 1 }}
                       >+</button>
                     </div>
                     <div style={styles.itemTotal}>₹{product.total.toFixed(2)}</div>
@@ -3272,27 +3272,27 @@ billTableHeader: {
               )}
             </div>
             {selectedProducts.length > 0 && (
-              <p style={{fontSize: '11px', color: '#64748b', marginTop: '12px', textAlign: 'center'}}>
+              <p style={{ fontSize: '11px', color: '#64748b', marginTop: '12px', textAlign: 'center' }}>
                 💡 Set quantity to 0 to keep item in list (will not be billed)
               </p>
             )}
           </div>
         </div>
       </div>
-      
+
       {/* Right Panel - Bill Preview */}
       <div style={styles.billPanel} className="no-print">
         <div style={styles.billContainer}>
-          <div 
-            style={styles.billPaper} 
-            id="billPaper" 
+          <div
+            style={styles.billPaper}
+            id="billPaper"
             ref={billPaperRef}
           >
             <div style={styles.invoiceHeader}>
               <div style={styles.logoContainer}>
-                <img 
-                  src={logoImage} 
-                  alt="Company Logo" 
+                <img
+                  src={logoImage}
+                  alt="Company Logo"
                   style={styles.logoImage}
                 />
                 <div style={styles.sellerAddress}>
@@ -3349,7 +3349,7 @@ billTableHeader: {
             <div style={styles.customerSection}>
               <div style={styles.customerRow}>
                 <span style={styles.customerLabel}>Customer Type:</span>
-                <span 
+                <span
                   style={{
                     ...styles.customerTypeBadge,
                     ...(customerType === 'internal' ? styles.internalBadge : styles.externalBadge)
@@ -3358,33 +3358,33 @@ billTableHeader: {
                   {customerType === 'internal' ? '🏢 INTERNAL' : '👤 EXTERNAL'}
                 </span>
               </div>
-              
+
               <div style={styles.customerRow}>
                 <span style={styles.customerLabel}>Name:</span>
                 <span style={styles.customerValue}><strong>{customerName}</strong></span>
               </div>
-              
+
               {customerPhone && (
                 <div style={styles.customerRow}>
-                  <span style={{...styles.customerLabel, color: '#3b82f6'}}>📞 Phone:</span>
+                  <span style={{ ...styles.customerLabel, color: '#3b82f6' }}>📞 Phone:</span>
                   <span style={styles.customerValue}>{customerPhone}</span>
                 </div>
               )}
-              
+
               {customerEmail && (
                 <div style={styles.customerRow}>
                   <span style={styles.customerLabel}>✉️ Email:</span>
                   <span style={styles.customerValue}>{customerEmail}</span>
                 </div>
               )}
-              
+
               {customerAddress && (
                 <div style={styles.customerRow}>
                   <span style={styles.customerLabel}>📍 Address:</span>
                   <span style={styles.customerValue}>{customerAddress}</span>
                 </div>
               )}
-              
+
               {customerGST && isTaxBill && (
                 <div style={styles.customerRow}>
                   <span style={styles.customerLabel}>GST:</span>
@@ -3392,7 +3392,7 @@ billTableHeader: {
                 </div>
               )}
             </div>
-            
+
             <div style={styles.customerSection} className="no-print">
               <select
                 style={styles.customerTypeSelect}
@@ -3405,7 +3405,7 @@ billTableHeader: {
                 <option value="external">👤 External Customer</option>
                 <option value="internal">🏢 Internal (Staff)</option>
               </select>
-              
+
               <input
                 type="text"
                 style={styles.customerInput}
@@ -3413,7 +3413,7 @@ billTableHeader: {
                 onChange={(e) => {
                   const newName = e.target.value;
                   setCustomerName(newName);
-                  
+
                   // Check if name matches an available customer
                   const matchedCustomer = availableCustomers.find(c => c.name && c.name.toLowerCase() === newName.toLowerCase());
                   if (matchedCustomer) {
@@ -3434,7 +3434,7 @@ billTableHeader: {
                   <option key={c.id} value={c.name} />
                 ))}
               </datalist>
-              
+
               <input
                 type="text"
                 style={{
@@ -3447,7 +3447,7 @@ billTableHeader: {
                 placeholder={fetchingCustomer ? "Searching..." : "📞 Phone Number"}
                 maxLength="10"
               />
-              
+
               <input
                 type="email"
                 style={styles.customerInput}
@@ -3455,7 +3455,7 @@ billTableHeader: {
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 placeholder="✉️ Email Address"
               />
-              
+
               <input
                 type="text"
                 style={styles.customerInput}
@@ -3463,7 +3463,7 @@ billTableHeader: {
                 onChange={(e) => setCustomerAddress(e.target.value)}
                 placeholder="📍 Address"
               />
-              
+
               <input
                 type="text"
                 style={{
@@ -3481,10 +3481,10 @@ billTableHeader: {
                 </div>
               )}
             </div>
-            
+
             {/* Discount Section */}
             <div style={styles.discountSection} className="no-print">
-              <div 
+              <div
                 style={styles.discountHeader}
                 onClick={() => setShowDiscountInput(!showDiscountInput)}
               >
@@ -3495,7 +3495,7 @@ billTableHeader: {
                   {showDiscountInput ? '▼' : '▶'}
                 </span>
               </div>
-              
+
               {showDiscountInput && (
                 <div style={styles.discountControls}>
                   <select
@@ -3506,7 +3506,7 @@ billTableHeader: {
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed Amount (₹)</option>
                   </select>
-                  
+
                   <input
                     type="number"
                     style={styles.discountInput}
@@ -3519,16 +3519,16 @@ billTableHeader: {
                   />
                 </div>
               )}
-              
+
               <div style={styles.discountAmount}>
                 💰 Discount Amount: <strong>-₹{discountAmount.toFixed(2)}</strong>
                 {!manualDiscount && customerType === 'internal' && (
-                  <span style={{fontSize: '9px', marginLeft: '8px', color: '#64748b'}}>
+                  <span style={{ fontSize: '9px', marginLeft: '8px', color: '#64748b' }}>
                     (Staff discount)
                   </span>
                 )}
               </div>
-              
+
               {manualDiscount && (
                 <button
                   style={{
@@ -3545,124 +3545,124 @@ billTableHeader: {
                 </button>
               )}
             </div><table style={styles.billTable}>
-  <thead>
-    <tr style={styles.billTableHeader}>
-      <th>S.N</th>
-      <th>Item Name</th>
-      <th>HSN</th>
-      <th>Qty</th>
-      <th>Free</th>
-      <th>Rate</th>
+              <thead>
+                <tr style={styles.billTableHeader}>
+                  <th>S.N</th>
+                  <th>Item Name</th>
+                  <th>HSN</th>
+                  <th>Qty</th>
+                  <th>Free</th>
+                  <th>Rate</th>
 
-      {isTaxBill && (
-        <th>CGST {(GST_RATE_PERCENT / 2).toFixed(1)}%</th>
-      )}
+                  {isTaxBill && (
+                    <th>CGST {(GST_RATE_PERCENT / 2).toFixed(1)}%</th>
+                  )}
 
-      {isTaxBill && (
-        <th>SGST {(GST_RATE_PERCENT / 2).toFixed(1)}%</th>
-      )}
+                  {isTaxBill && (
+                    <th>SGST {(GST_RATE_PERCENT / 2).toFixed(1)}%</th>
+                  )}
 
-      <th>Total</th>
-    </tr>
-  </thead>
+                  <th>Total</th>
+                </tr>
+              </thead>
 
-  <tbody>
-    {activeProducts.length === 0 ? (
-      <tr>
-        <td
-          colSpan={isTaxBill ? 9 : 7}
-          style={styles.emptyTableCell}
-        >
-          --- No items in bill ---
-        </td>
-      </tr>
-    ) : (
-      activeProducts.map((product, idx) => {
+              <tbody>
+                {activeProducts.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={isTaxBill ? 9 : 7}
+                      style={styles.emptyTableCell}
+                    >
+                      --- No items in bill ---
+                    </td>
+                  </tr>
+                ) : (
+                  activeProducts.map((product, idx) => {
 
-        const rate = parseFloat(product.sellPrice) || 0;
-        const qty = product.quantity || 0;
+                    const rate = parseFloat(product.sellPrice) || 0;
+                    const qty = product.quantity || 0;
 
-        const freeQty = getFreeQuantity(qty);
+                    const freeQty = getFreeQuantity(qty);
 
-        const totalItemTax = getLineTaxAmount(product);
+                    const totalItemTax = getLineTaxAmount(product);
 
-        const cgstAmt = (totalItemTax / 2).toFixed(2);
-        const sgstAmt = (totalItemTax / 2).toFixed(2);
+                    const cgstAmt = (totalItemTax / 2).toFixed(2);
+                    const sgstAmt = (totalItemTax / 2).toFixed(2);
 
-        const itemTotalAmt = getLineTotalAmount(product);
+                    const itemTotalAmt = getLineTotalAmount(product);
 
-        return (
-          <tr
-            key={`${product.source || 'product'}-${product.id}`}
-          >
-            <td>{idx + 1}</td>
+                    return (
+                      <tr
+                        key={`${product.source || 'product'}-${product.id}`}
+                      >
+                        <td>{idx + 1}</td>
 
-            <td style={styles.billItemNameCell}>
-              {product.name.length > 16
-                ? product.name.substring(0, 14) + '...'
-                : product.name}
+                        <td style={styles.billItemNameCell}>
+                          {product.name.length > 16
+                            ? product.name.substring(0, 14) + '...'
+                            : product.name}
 
-              {product.model && (
-                <small style={styles.billItemSmall}>
-                  {product.model}
-                </small>
-              )}
-            </td>
+                          {product.model && (
+                            <small style={styles.billItemSmall}>
+                              {product.model}
+                            </small>
+                          )}
+                        </td>
 
-            <td>
-              {product.hns || product.hsn || '21050000'}
-            </td>
+                        <td>
+                          {product.hns || product.hsn || '21050000'}
+                        </td>
 
-            <td>{qty}</td>
+                        <td>{qty}</td>
 
-            <td>{freeQty}</td>
+                        <td>{freeQty}</td>
 
-            <td>₹{rate.toFixed(2)}</td>
+                        <td>₹{rate.toFixed(2)}</td>
 
-            {isTaxBill && <td>₹{cgstAmt}</td>}
+                        {isTaxBill && <td>₹{cgstAmt}</td>}
 
-            {isTaxBill && <td>₹{sgstAmt}</td>}
+                        {isTaxBill && <td>₹{sgstAmt}</td>}
 
-            <td>
-              <strong>
-                ₹{itemTotalAmt.toFixed(2)}
-              </strong>
-            </td>
-          </tr>
-        );
-      })
-    )}
-  </tbody>
-</table>
-            
+                        <td>
+                          <strong>
+                            ₹{itemTotalAmt.toFixed(2)}
+                          </strong>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+
             <div style={styles.billSummary}>
               <div style={styles.summaryRow}>
                 <span>Subtotal:</span>
                 <span>₹{subtotal.toFixed(2)}</span>
               </div>
-              
+
               {discount > 0 && (
                 <div style={styles.summaryRow}>
                   <span>Discount ({discount}{discountType === 'percentage' ? '%' : '₹'}):</span>
-                  <span style={{color: '#ef4444'}}>-₹{discountAmount.toFixed(2)}</span>
+                  <span style={{ color: '#ef4444' }}>-₹{discountAmount.toFixed(2)}</span>
                 </div>
               )}
-              
+
               <div style={styles.summaryRow}>
                 <span>After Discount:</span>
                 <span>₹{(subtotal - discountAmount).toFixed(2)}</span>
               </div>
-              
+
               {tax > 0 && isTaxBill && (
                 <div style={styles.summaryRow}>
                   <span>GST ({GST_RATE_PERCENT}%):</span>
-                  <span style={{color: '#3b82f6'}}>+₹{taxAmount.toFixed(2)}</span>
+                  <span style={{ color: '#3b82f6' }}>+₹{taxAmount.toFixed(2)}</span>
                 </div>
               )}
-              
+
               <div style={styles.summaryRowTotal}>
                 <span>Total:</span>
-                <span style={{color: '#10b981', fontSize: '14px'}}>₹{(Number(total) + Number(taxAmount)).toFixed(2)}</span>
+                <span style={{ color: '#10b981', fontSize: '14px' }}>₹{(Number(total) + Number(taxAmount)).toFixed(2)}</span>
               </div>
             </div>
 
@@ -3735,7 +3735,7 @@ billTableHeader: {
                   <option value="mixed">🔄 Mixed</option>
                 </select>
               </div>
-              
+
               {showPaymentDetails && (
                 <div style={styles.paymentDetails}>
                   {paymentMethod === 'cash' && (
@@ -3757,7 +3757,7 @@ billTableHeader: {
                       </div>
                     </>
                   )}
-                  
+
                   {paymentMethod === 'card' && (
                     <>
                       <input
@@ -3784,7 +3784,7 @@ billTableHeader: {
                       />
                     </>
                   )}
-                  
+
                   {paymentMethod === 'upi' && (
                     <>
                       <input
@@ -3803,7 +3803,7 @@ billTableHeader: {
                       />
                     </>
                   )}
-                  
+
                   {paymentMethod === 'cheque' && (
                     <>
                       <input
@@ -3822,15 +3822,15 @@ billTableHeader: {
                       />
                     </>
                   )}
-                  
+
                   {paymentMethod === 'mixed' && (
-                    <div style={{fontSize: '10px', color: '#64748b'}}>
+                    <div style={{ fontSize: '10px', color: '#64748b' }}>
                       <p>Mixed payment - Please enter details in POS</p>
                     </div>
                   )}
                 </div>
               )}
-              
+
               <div style={styles.paymentRow}>
                 <span>💰 Paid Amount:</span>
                 <input
@@ -3842,26 +3842,26 @@ billTableHeader: {
                   step="0.01"
                 />
               </div>
-              
+
               <div style={styles.paymentRow}>
                 <span>📊 Payment Status:</span>
                 <span style={{
-                  color: paymentStatus === 'paid' ? '#10b981' : 
-                         paymentStatus === 'partial' ? '#f59e0b' : '#ef4444',
+                  color: paymentStatus === 'paid' ? '#10b981' :
+                    paymentStatus === 'partial' ? '#f59e0b' : '#ef4444',
                   fontWeight: '600'
                 }}>
-                  {paymentStatus === 'paid' ? '✅ PAID' : 
-                   paymentStatus === 'partial' ? '⚠️ PARTIAL' : '❌ PENDING'}
+                  {paymentStatus === 'paid' ? '✅ PAID' :
+                    paymentStatus === 'partial' ? '⚠️ PARTIAL' : '❌ PENDING'}
                 </span>
               </div>
-              
+
               {due > 0 && paymentStatus !== 'pending' && (
                 <div style={styles.paymentRow}>
                   <span>Due Amount:</span>
-                  <span style={{color: '#ef4444'}}>₹{due.toFixed(2)}</span>
+                  <span style={{ color: '#ef4444' }}>₹{due.toFixed(2)}</span>
                 </div>
               )}
-              
+
               <button
                 style={{
                   ...styles.btn,
@@ -3875,7 +3875,7 @@ billTableHeader: {
                 Exact Amount
               </button>
             </div>
-            
+
             <div style={styles.billFooter}>
               <p style={styles.billFooterP}>🙏 Thank you for your purchase!</p>
               <p style={styles.billFooterP}>🚫 Goods once sold not returnable</p>
@@ -3885,12 +3885,12 @@ billTableHeader: {
                   {paymentMethod.toUpperCase()}: {transactionId}
                 </p>
               )}
-              <div style={{marginTop: '6px', paddingTop: '4px', borderTop: '1px dotted #e2e8f0', fontSize: '8px', color: '#94a3b8'}}>
+              <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px dotted #e2e8f0', fontSize: '8px', color: '#94a3b8' }}>
                 👤 Bill created by: {createdBy}
               </div>
             </div>
           </div>
-          
+
           <div style={styles.actionButtons} className="no-print">
             <button
               style={{
@@ -3953,7 +3953,7 @@ billTableHeader: {
           </button>
 
           {billSaved && (
-            <p style={{fontSize: '11px', color: '#10b981', textAlign: 'center', marginTop: '10px'}}>
+            <p style={{ fontSize: '11px', color: '#10b981', textAlign: 'center', marginTop: '10px' }}>
               ✓ Bill saved to database
             </p>
           )}

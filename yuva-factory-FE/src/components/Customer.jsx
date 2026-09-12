@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api';
+const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + '/api';
 
 const CustomerDetailsPage = () => {
   const navigate = useNavigate();
@@ -110,7 +110,7 @@ const CustomerDetailsPage = () => {
     try {
       const phoneParam = customer.customerPhone ? encodeURIComponent(customer.customerPhone) : 'no-phone';
       const nameParam = customer.customerName ? `?name=${encodeURIComponent(customer.customerName)}` : '';
-      
+
       const response = await fetch(`${API_BASE_URL}/customers/${phoneParam}${nameParam}`, {
         method: 'DELETE'
       });

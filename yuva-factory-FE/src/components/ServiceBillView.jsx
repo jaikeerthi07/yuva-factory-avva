@@ -42,7 +42,7 @@ import axios from 'axios';
 
 // Create axios instance with credentials
 const api = axios.create({
-  baseURL: (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api',
+  baseURL: (process.env.REACT_APP_API_URL || "http://localhost:5000") + '/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
@@ -82,7 +82,7 @@ const ServiceBills = () => {
       const params = new URLSearchParams();
       params.append('page', filters.page);
       params.append('per_page', '10');
-      
+
       if (filters.customer_name) {
         params.append('customer_name', filters.customer_name);
       }
@@ -96,15 +96,15 @@ const ServiceBills = () => {
       params.append('bill_number', 'HPS');
 
       console.log('Fetching bills with params:', params.toString());
-      
+
       const response = await api.get(`/service-bills?${params.toString()}`);
-      
+
       if (response.data) {
         // Additional client-side filtering to ensure only HPS bills are shown
-        const hpsBills = (response.data.bills || []).filter(bill => 
+        const hpsBills = (response.data.bills || []).filter(bill =>
           bill.billNumber && bill.billNumber.startsWith('HPS')
         );
-        
+
         setBills(hpsBills);
         setPagination({
           total: hpsBills.length,
@@ -125,7 +125,7 @@ const ServiceBills = () => {
     try {
       console.log('Fetching bill details for ID:', billId);
       const response = await api.get(`/service-bills/${billId}`);
-      
+
       if (response.data) {
         setSelectedBill(response.data);
         setOpenDialog(true);
@@ -389,8 +389,8 @@ const ServiceBills = () => {
               >
                 Search
               </Button>
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 onClick={handleReset}
                 disabled={loading}
               >
@@ -399,12 +399,12 @@ const ServiceBills = () => {
             </Box>
           </Grid>
         </Grid>
-        
+
         {/* HPS Filter Indicator */}
         <Box mt={2}>
-          <Chip 
-            label="Filtering: HPS bills only" 
-            color="primary" 
+          <Chip
+            label="Filtering: HPS bills only"
+            color="primary"
             size="small"
             icon={<ReceiptIcon />}
           />
@@ -608,7 +608,7 @@ const ServiceBills = () => {
                             {formatCurrency(selectedBill.bill?.tax)}
                           </Typography>
                           <Typography variant="body2" align="right">
-                            {formatCurrency(selectedBill.bill?.discount)} 
+                            {formatCurrency(selectedBill.bill?.discount)}
                             {selectedBill.bill?.discountType && ` (${selectedBill.bill.discountType})`}
                           </Typography>
                           <Typography variant="body2" fontWeight="bold" align="right">
@@ -639,7 +639,7 @@ const ServiceBills = () => {
               <Button onClick={() => setOpenDialog(false)}>Close</Button>
               <Button
                 variant="contained"
-                onClick={() => window.open(${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/service-bills/${selectedBill.bill?.id}/pdf`, '_blank')}
+                onClick={() => window.open(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/service-bills/${selectedBill.bill?.id}/pdf`, '_blank')}
                 disabled={!selectedBill.bill?.id}
               >
                 Download PDF

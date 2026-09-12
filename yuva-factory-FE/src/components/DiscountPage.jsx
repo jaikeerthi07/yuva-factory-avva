@@ -15,11 +15,11 @@ const DiscountPage = () => {
   const [calcAmt, setCalcAmt] = useState("");
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   const inputRefs = useRef({});
 
   // API Base URL - change this to your backend URL
-  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'/api';
+  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + '/api';
 
   // Fetch ranges from backend on component mount
   useEffect(() => {
@@ -75,11 +75,11 @@ const DiscountPage = () => {
 
   const validateRanges = (newRange, isInfinite) => {
     const sortedRanges = [...ranges].sort((a, b) => a.min - b.min);
-    
+
     for (let i = 0; i < sortedRanges.length; i++) {
       const current = sortedRanges[i];
       if (current.id === newRange.id) continue;
-      
+
       if (isInfinite) {
         if (newRange.min <= current.max && current.max !== null) {
           return false;
@@ -127,7 +127,7 @@ const DiscountPage = () => {
     }
 
     const newRange = { id, min: mn, max: mx, discount: d, isInfinite };
-    
+
     if (!validateRanges(newRange, isInfinite)) {
       notify("Ranges cannot overlap!", "error");
       return;
@@ -151,14 +151,14 @@ const DiscountPage = () => {
       }
 
       const result = await response.json();
-      
+
       // Update local state
       setRanges((p) =>
         p.map((r) =>
           r.id === id ? result.range : r
         )
       );
-      
+
       setRanges((p) => [...p].sort((a, b) => a.min - b.min));
       setEditId(null);
       notify("Range saved!");
@@ -173,7 +173,7 @@ const DiscountPage = () => {
       notify("Cannot delete the infinity range. You can edit it instead.", "error");
       return;
     }
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/discounts/${id}`, {
         method: 'DELETE'
@@ -195,14 +195,14 @@ const DiscountPage = () => {
     const nonInfiniteRanges = ranges.filter(r => !r.isInfinite);
     const lastNonInfinite = nonInfiniteRanges[nonInfiniteRanges.length - 1];
     const newMin = lastNonInfinite ? lastNonInfinite.max + 1 : 0;
-    
+
     const newRow = {
       min: newMin,
       max: newMin + 4999,
       discount: 0,
       isInfinite: false,
     };
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/discounts`, {
         method: 'POST',
@@ -217,7 +217,7 @@ const DiscountPage = () => {
 
       const result = await response.json();
       const savedRow = result.range;
-      
+
       const infinityIndex = ranges.findIndex(r => r.isInfinite);
       if (infinityIndex !== -1) {
         const newRanges = [...ranges];
@@ -226,7 +226,7 @@ const DiscountPage = () => {
       } else {
         setRanges((p) => [...p, savedRow]);
       }
-      
+
       setTimeout(() => startEdit(savedRow), 0);
       notify("New range added!");
     } catch (error) {
@@ -248,7 +248,7 @@ const DiscountPage = () => {
 
   const EditField = ({ fieldKey, placeholder, width = 100, rowId }) => {
     const inputRef = useRef(null);
-    
+
     useEffect(() => {
       if (inputRef.current && fieldKey === "min") {
         inputRef.current.focus();
@@ -356,16 +356,15 @@ const DiscountPage = () => {
                     return (
                       <tr
                         key={row.id}
-                        className={`${ed ? "dp-tr-ed" : ""} ${
-                          isActive ? "dp-tr-active" : ""
-                        }`}
+                        className={`${ed ? "dp-tr-ed" : ""} ${isActive ? "dp-tr-active" : ""
+                          }`}
                       >
                         <td>
                           {ed ? (
-                            <EditField 
-                              fieldKey="min" 
-                              placeholder="0" 
-                              width={110} 
+                            <EditField
+                              fieldKey="min"
+                              placeholder="0"
+                              width={110}
                               rowId={row.id}
                             />
                           ) : (
@@ -397,9 +396,8 @@ const DiscountPage = () => {
                           ) : (
                             <div className="dp-disc-cell">
                               <span
-                                className={`dp-pct-badge ${
-                                  row.discount > 0 ? "dp-pct-on" : ""
-                                }`}
+                                className={`dp-pct-badge ${row.discount > 0 ? "dp-pct-on" : ""
+                                  }`}
                               >
                                 {row.discount}%
                               </span>

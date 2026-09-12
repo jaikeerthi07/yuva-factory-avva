@@ -67,7 +67,7 @@ const RawMaterials = () => {
         sellPrice: parseFloat(item.sell_price || item.sellPrice || item.buy_price || item.buyPrice || 0),
         quantity: parseInt(item.quantity || 1),
       };
-      
+
       const createRes = await fetch((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,12 +93,12 @@ const RawMaterials = () => {
       alert("No items to add.");
       return;
     }
-    
+
     if (!window.confirm(`Are you sure you want to add all ${items.length} items to your Products inventory?`)) return;
 
     setLoading(true);
     let successCount = 0;
-    
+
     for (const item of items) {
       try {
         const newItem = {
@@ -113,7 +113,7 @@ const RawMaterials = () => {
           sellPrice: parseFloat(item.sell_price || item.sellPrice || 0),
           quantity: parseInt(item.quantity || 1),
         };
-        
+
         const createRes = await fetch((process.env.REACT_APP_API_URL || "http://localhost:5000") + "/api/products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -129,7 +129,7 @@ const RawMaterials = () => {
         console.error("Error adding product:", item.name, err);
       }
     }
-    
+
     setLoading(false);
     fetchItems(); // Refresh the table
     alert(`Successfully added ${successCount} out of ${items.length} items to Products!`);
@@ -160,7 +160,7 @@ const RawMaterials = () => {
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>Raw Materials (Supplier Items)</h1>
-        <button 
+        <button
           onClick={addAllToProducts}
           style={{
             padding: "10px 16px",
@@ -200,12 +200,12 @@ const RawMaterials = () => {
             {loading ? (
               <tr><td colSpan="10" style={styles.loadingState}>Loading...</td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan="10" style={{textAlign:"center", padding:"30px", color: "#94a3b8"}}>No raw materials found from suppliers.</td></tr>
+              <tr><td colSpan="10" style={{ textAlign: "center", padding: "30px", color: "#94a3b8" }}>No raw materials found from suppliers.</td></tr>
             ) : (
               items.map((item, index) => (
                 <tr key={`${item.id}-${index}`}>
                   <td style={styles.td}>
-                    <span style={{ fontWeight: "500", color: "#f8fafc" }}>{item.supplierCompany}</span> <br/>
+                    <span style={{ fontWeight: "500", color: "#f8fafc" }}>{item.supplierCompany}</span> <br />
                     <span style={{ fontSize: "12px", color: "#94a3b8" }}>{item.supplierName}</span>
                   </td>
                   <td style={styles.td}>
@@ -231,8 +231,8 @@ const RawMaterials = () => {
                     {item.quantity}
                   </td>
                   <td style={styles.td}>
-                    <span style={{ 
-                      background: item.status === 'Pending' ? '#f59e0b' : '#334155', 
+                    <span style={{
+                      background: item.status === 'Pending' ? '#f59e0b' : '#334155',
                       color: item.status === 'Pending' ? '#000' : '#e2e8f0',
                       padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '600'
                     }}>
@@ -241,9 +241,9 @@ const RawMaterials = () => {
                   </td>
                   <td style={styles.td}>
                     {item.attachment ? (
-                      <a 
-                        href={${process.env.REACT_APP_API_URL || "http://localhost:5000"}/uploads/${item.attachment}`}
-                        target="_blank" 
+                      <a
+                        href={`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/uploads/${item.attachment}`}
+                        target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: '#60a5fa', textDecoration: 'none', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
@@ -255,21 +255,21 @@ const RawMaterials = () => {
                   </td>
                   <td style={styles.td}>
                     <div style={{ display: "flex", gap: "8px" }}>
-                      <button 
+                      <button
                         onClick={() => addToProducts(item)}
                         title="Add to Products"
                         style={{
-                          background: "#10b981", color: "white", border: "none", padding: "4px 8px", 
+                          background: "#10b981", color: "white", border: "none", padding: "4px 8px",
                           borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px"
                         }}
                       >
                         <Plus size={14} /> Add
                       </button>
-                      <button 
+                      <button
                         onClick={() => deleteItem(item.id)}
                         title="Delete Item"
                         style={{
-                          background: "#ef4444", color: "white", border: "none", padding: "4px 8px", 
+                          background: "#ef4444", color: "white", border: "none", padding: "4px 8px",
                           borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"
                         }}
                       >

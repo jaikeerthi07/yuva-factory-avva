@@ -2,26 +2,26 @@
 import { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'';
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 // ─── Tab definitions ───────────────────────────────────────────────────────────
-const TABS = ["b2b,sez,de","b2cl","b2cs","cdnr","cdnur","exp","at","atadj","exemp","hsn","hsn(b2b)","hsn(b2c)","docs"];
+const TABS = ["b2b,sez,de", "b2cl", "b2cs", "cdnr", "cdnur", "exp", "at", "atadj", "exemp", "hsn", "hsn(b2b)", "hsn(b2c)", "docs"];
 
 const TAB_COLUMNS = {
-  "b2b,sez,de": ["GSTIN/UIN of Recipient","Receiver Name","Invoice Number","Invoice Date","Invoice Value","Place Of Supply","Reverse Charge","Applicable % of Tax Rate","Invoice Type","E-Commerce GSTIN","Rate","Taxable Value","Cess Amount"],
-  "b2cl":       ["Invoice Number","Invoice Date","Invoice Value","Place Of Supply","Rate","Applicable % of Tax Rate","Taxable Value","Cess Amount","E-Commerce GSTIN","Sale from Bonded WH"],
-  "b2cs":       ["Type","Place Of Supply","Rate","Applicable % of Tax Rate","Taxable Value","Cess Amount","E-Commerce GSTIN"],
-  "cdnr":       ["GSTIN/UIN of Recipient","Receiver Name","Note Number","Note Date","Note Type","Place Of Supply","Reverse Charge","Note Supply Type","Note Value","Applicable % of Tax Rate","Rate","Taxable Value","Cess Amount"],
-  "cdnur":      ["UR Type","Note Number","Note Date","Note Type","Place Of Supply","Note Value","Applicable % of Tax Rate","Rate","Taxable Value","Cess Amount"],
-  "exp":        ["Export Type","Invoice Number","Invoice Date","Invoice Value","Port Code","Shipping Bill Number","Shipping Bill Date","Rate","Applicable % of Tax Rate","Taxable Value","Cess Amount"],
-  "at":         ["Place Of Supply","Rate","Applicable % of Tax Rate","Gross Advance Received","Cess Amount"],
-  "atadj":      ["Place Of Supply","Rate","Applicable % of Tax Rate","Gross Advance Adjusted","Cess Amount"],
-  "exemp":      ["Description","Nil Rated Supplies","Exempted (other than Nil Rated / Non-GST Supply)","Non-GST Supplies"],
-  "hsn":        ["HSN","Description","UQC","Total Quantity","Total Value","Taxable Value","Integrated Tax Amount","Central Tax Amount","State/UT Tax Amount","Cess Amount","Rate"],
-  "hsn(b2b)":   ["HSN","Description","UQC","Total Quantity","Total Value","Taxable Value","Integrated Tax Amount","Central Tax Amount","State/UT Tax Amount","Cess Amount","Rate"],
-  "hsn(b2c)":   ["HSN","Description","UQC","Total Quantity","Total Value","Taxable Value","Integrated Tax Amount","Central Tax Amount","State/UT Tax Amount","Cess Amount","Rate"],
-  "docs":       ["Nature of Document","Sr. No. From","Sr. No. To","Total Number","Cancelled"],
-  
+  "b2b,sez,de": ["GSTIN/UIN of Recipient", "Receiver Name", "Invoice Number", "Invoice Date", "Invoice Value", "Place Of Supply", "Reverse Charge", "Applicable % of Tax Rate", "Invoice Type", "E-Commerce GSTIN", "Rate", "Taxable Value", "Cess Amount"],
+  "b2cl": ["Invoice Number", "Invoice Date", "Invoice Value", "Place Of Supply", "Rate", "Applicable % of Tax Rate", "Taxable Value", "Cess Amount", "E-Commerce GSTIN", "Sale from Bonded WH"],
+  "b2cs": ["Type", "Place Of Supply", "Rate", "Applicable % of Tax Rate", "Taxable Value", "Cess Amount", "E-Commerce GSTIN"],
+  "cdnr": ["GSTIN/UIN of Recipient", "Receiver Name", "Note Number", "Note Date", "Note Type", "Place Of Supply", "Reverse Charge", "Note Supply Type", "Note Value", "Applicable % of Tax Rate", "Rate", "Taxable Value", "Cess Amount"],
+  "cdnur": ["UR Type", "Note Number", "Note Date", "Note Type", "Place Of Supply", "Note Value", "Applicable % of Tax Rate", "Rate", "Taxable Value", "Cess Amount"],
+  "exp": ["Export Type", "Invoice Number", "Invoice Date", "Invoice Value", "Port Code", "Shipping Bill Number", "Shipping Bill Date", "Rate", "Applicable % of Tax Rate", "Taxable Value", "Cess Amount"],
+  "at": ["Place Of Supply", "Rate", "Applicable % of Tax Rate", "Gross Advance Received", "Cess Amount"],
+  "atadj": ["Place Of Supply", "Rate", "Applicable % of Tax Rate", "Gross Advance Adjusted", "Cess Amount"],
+  "exemp": ["Description", "Nil Rated Supplies", "Exempted (other than Nil Rated / Non-GST Supply)", "Non-GST Supplies"],
+  "hsn": ["HSN", "Description", "UQC", "Total Quantity", "Total Value", "Taxable Value", "Integrated Tax Amount", "Central Tax Amount", "State/UT Tax Amount", "Cess Amount", "Rate"],
+  "hsn(b2b)": ["HSN", "Description", "UQC", "Total Quantity", "Total Value", "Taxable Value", "Integrated Tax Amount", "Central Tax Amount", "State/UT Tax Amount", "Cess Amount", "Rate"],
+  "hsn(b2c)": ["HSN", "Description", "UQC", "Total Quantity", "Total Value", "Taxable Value", "Integrated Tax Amount", "Central Tax Amount", "State/UT Tax Amount", "Cess Amount", "Rate"],
+  "docs": ["Nature of Document", "Sr. No. From", "Sr. No. To", "Total Number", "Cancelled"],
+
 };
 
 const DEFAULT_DATA = {
@@ -108,13 +108,13 @@ const DEFAULT_DATA = {
 // };
 
 // ─── Download helpers ──────────────────────────────────────────────────────────
-const DOWNLOAD_TABS = ["b2b,sez,de","b2cl","b2cs","cdnr","cdnur","exp","at","atadj","exemp","hsn","hsn(b2b)","hsn(b2c)","docs"];
-const TAB_FILENAME  = {"b2b,sez,de":"B2B_SEZ_DE","b2cl":"B2CL","b2cs":"B2CS","cdnr":"CDNR","cdnur":"CDNUR","exp":"EXP","at":"AT","atadj":"ATADJ","exemp":"EXEMP","hsn":"HSN","hsn(b2b)":"HSN_B2B","hsn(b2c)":"HSN_B2C","docs":"DOCS"};
+const DOWNLOAD_TABS = ["b2b,sez,de", "b2cl", "b2cs", "cdnr", "cdnur", "exp", "at", "atadj", "exemp", "hsn", "hsn(b2b)", "hsn(b2c)", "docs"];
+const TAB_FILENAME = { "b2b,sez,de": "B2B_SEZ_DE", "b2cl": "B2CL", "b2cs": "B2CS", "cdnr": "CDNR", "cdnur": "CDNUR", "exp": "EXP", "at": "AT", "atadj": "ATADJ", "exemp": "EXEMP", "hsn": "HSN", "hsn(b2b)": "HSN_B2B", "hsn(b2c)": "HSN_B2C", "docs": "DOCS" };
 
 function rowsToCSV(cols, rows) {
-  const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+  const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const header = cols.map(esc).join(",");
-  const body   = rows.map(r => cols.map(c => esc(r[c] ?? "")).join(",")).join("\n");
+  const body = rows.map(r => cols.map(c => esc(r[c] ?? "")).join(",")).join("\n");
   return "\uFEFF" + header + "\n" + body;
 }
 
@@ -124,9 +124,9 @@ function rowsToJSON(rows) {
 
 // Simple XLSX-compatible XML (single-sheet workbook)
 function rowsToXLSXXML(cols, rows) {
-  const escX = v => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const escX = v => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   let xml = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Sheet1"><Table>`;
-  const mkRow = cells => `<Row>${cells.map(c=>`<Cell><Data ss:Type="String">${escX(c)}</Data></Cell>`).join("")}</Row>`;
+  const mkRow = cells => `<Row>${cells.map(c => `<Cell><Data ss:Type="String">${escX(c)}</Data></Cell>`).join("")}</Row>`;
   xml += mkRow(cols);
   rows.forEach(r => { xml += mkRow(cols.map(c => r[c] ?? "")); });
   xml += `</Table></Worksheet></Workbook>`;
@@ -135,8 +135,8 @@ function rowsToXLSXXML(cols, rows) {
 
 // ── Correct ZIP builder (STORE, no compression) ──────────────────────────────
 function buildZip(files) {
-  const enc   = new TextEncoder();
-  const toU8  = s => typeof s === "string" ? enc.encode(s) : s;
+  const enc = new TextEncoder();
+  const toU8 = s => typeof s === "string" ? enc.encode(s) : s;
 
   // CRC-32 table
   const CRC_TABLE = (() => {
@@ -159,7 +159,7 @@ function buildZip(files) {
   function w16(dv, off, v) { dv.setUint16(off, v, true); }
   function w32(dv, off, v) { dv.setUint32(off, v, true); }
 
-  const LOCAL_HDR  = 30; // fixed local file header size (excl. filename + extra)
+  const LOCAL_HDR = 30; // fixed local file header size (excl. filename + extra)
   const CENTRAL_HDR = 46; // fixed central dir entry size (excl. filename)
 
   const entries = files.map(f => {
@@ -171,11 +171,11 @@ function buildZip(files) {
   // Calculate total size
   let localSize = 0;
   entries.forEach(e => { localSize += LOCAL_HDR + e.name.length + e.size; });
-  const cdSize  = entries.reduce((a, e) => a + CENTRAL_HDR + e.name.length, 0);
+  const cdSize = entries.reduce((a, e) => a + CENTRAL_HDR + e.name.length, 0);
   const eocdSize = 22;
   const buf = new ArrayBuffer(localSize + cdSize + eocdSize);
-  const dv  = new DataView(buf);
-  const u8  = new Uint8Array(buf);
+  const dv = new DataView(buf);
+  const u8 = new Uint8Array(buf);
 
   let pos = 0;
   const offsets = [];
@@ -183,17 +183,17 @@ function buildZip(files) {
   // Local file entries
   entries.forEach(e => {
     offsets.push(pos);
-    w32(dv, pos,      0x04034B50); // local file header sig
-    w16(dv, pos+4,    20);          // version needed
-    w16(dv, pos+6,    0);           // flags
-    w16(dv, pos+8,    0);           // compression: STORE
-    w16(dv, pos+10,   0);           // mod time
-    w16(dv, pos+12,   0);           // mod date
-    w32(dv, pos+14,   e.crc);
-    w32(dv, pos+18,   e.size);      // compressed size
-    w32(dv, pos+22,   e.size);      // uncompressed size
-    w16(dv, pos+26,   e.name.length);
-    w16(dv, pos+28,   0);           // extra field length
+    w32(dv, pos, 0x04034B50); // local file header sig
+    w16(dv, pos + 4, 20);          // version needed
+    w16(dv, pos + 6, 0);           // flags
+    w16(dv, pos + 8, 0);           // compression: STORE
+    w16(dv, pos + 10, 0);           // mod time
+    w16(dv, pos + 12, 0);           // mod date
+    w32(dv, pos + 14, e.crc);
+    w32(dv, pos + 18, e.size);      // compressed size
+    w32(dv, pos + 22, e.size);      // uncompressed size
+    w16(dv, pos + 26, e.name.length);
+    w16(dv, pos + 28, 0);           // extra field length
     pos += 30;
     u8.set(e.name, pos); pos += e.name.length;
     u8.set(e.data, pos); pos += e.size;
@@ -202,36 +202,36 @@ function buildZip(files) {
   // Central directory
   const cdStart = pos;
   entries.forEach((e, i) => {
-    w32(dv, pos,      0x02014B50); // central dir sig
-    w16(dv, pos+4,    20);          // version made by
-    w16(dv, pos+6,    20);          // version needed
-    w16(dv, pos+8,    0);           // flags
-    w16(dv, pos+10,   0);           // compression
-    w16(dv, pos+12,   0);           // mod time
-    w16(dv, pos+14,   0);           // mod date
-    w32(dv, pos+16,   e.crc);
-    w32(dv, pos+20,   e.size);      // compressed
-    w32(dv, pos+24,   e.size);      // uncompressed
-    w16(dv, pos+28,   e.name.length);
-    w16(dv, pos+30,   0);           // extra
-    w16(dv, pos+32,   0);           // comment
-    w16(dv, pos+34,   0);           // disk start
-    w16(dv, pos+36,   0);           // int attrs
-    w32(dv, pos+38,   0);           // ext attrs
-    w32(dv, pos+42,   offsets[i]);  // local header offset
+    w32(dv, pos, 0x02014B50); // central dir sig
+    w16(dv, pos + 4, 20);          // version made by
+    w16(dv, pos + 6, 20);          // version needed
+    w16(dv, pos + 8, 0);           // flags
+    w16(dv, pos + 10, 0);           // compression
+    w16(dv, pos + 12, 0);           // mod time
+    w16(dv, pos + 14, 0);           // mod date
+    w32(dv, pos + 16, e.crc);
+    w32(dv, pos + 20, e.size);      // compressed
+    w32(dv, pos + 24, e.size);      // uncompressed
+    w16(dv, pos + 28, e.name.length);
+    w16(dv, pos + 30, 0);           // extra
+    w16(dv, pos + 32, 0);           // comment
+    w16(dv, pos + 34, 0);           // disk start
+    w16(dv, pos + 36, 0);           // int attrs
+    w32(dv, pos + 38, 0);           // ext attrs
+    w32(dv, pos + 42, offsets[i]);  // local header offset
     pos += 46;
     u8.set(e.name, pos); pos += e.name.length;
   });
 
   // End of central directory
-  w32(dv, pos,    0x06054B50);      // EOCD sig
-  w16(dv, pos+4,  0);               // disk number
-  w16(dv, pos+6,  0);               // disk with CD
-  w16(dv, pos+8,  entries.length);  // entries this disk
-  w16(dv, pos+10, entries.length);  // total entries
-  w32(dv, pos+12, cdSize);          // CD size
-  w32(dv, pos+16, cdStart);         // CD offset
-  w16(dv, pos+20, 0);               // comment length
+  w32(dv, pos, 0x06054B50);      // EOCD sig
+  w16(dv, pos + 4, 0);               // disk number
+  w16(dv, pos + 6, 0);               // disk with CD
+  w16(dv, pos + 8, entries.length);  // entries this disk
+  w16(dv, pos + 10, entries.length);  // total entries
+  w32(dv, pos + 12, cdSize);          // CD size
+  w32(dv, pos + 16, cdStart);         // CD offset
+  w16(dv, pos + 20, 0);               // comment length
 
   return new Uint8Array(buf);
 }
@@ -246,14 +246,14 @@ function triggerDownload(blob, filename) {
 
 function downloadZip(format, tabData) {
   const files = DOWNLOAD_TABS.map(tab => {
-    const cols  = TAB_COLUMNS[tab] || [];
-    const rows  = tabData[tab] || [];
+    const cols = TAB_COLUMNS[tab] || [];
+    const rows = tabData[tab] || [];
     const fname = TAB_FILENAME[tab];
     let content, ext;
     if (format === "json") {
-      content = rowsToJSON(rows);        ext = "json";
+      content = rowsToJSON(rows); ext = "json";
     } else if (format === "csv") {
-      content = rowsToCSV(cols, rows);   ext = "csv";
+      content = rowsToCSV(cols, rows); ext = "csv";
     } else {
       content = rowsToXLSXXML(cols, rows); ext = "xls";
     }
@@ -323,14 +323,14 @@ const s = {
   },
 
   pInp: {
-   background: "#1e293b",
-  border: "1px solid #475569",
-  color: "#fff",
-  fontSize: "14px",
-  outline: "none",
-  borderRadius: "8px",
-  padding: "10px 12px",
-  boxSizing: "border-box",
+    background: "#1e293b",
+    border: "1px solid #475569",
+    color: "#fff",
+    fontSize: "14px",
+    outline: "none",
+    borderRadius: "8px",
+    padding: "10px 12px",
+    boxSizing: "border-box",
   },
 
   pSel: {
@@ -369,69 +369,69 @@ const s = {
   // TABLE WRAPPER
   gridWrap: {
     background: "#111827",
-  borderRadius: "18px",
-  overflow: "auto",
-  border: "1px solid #334155",
-  boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-  marginTop: "18px",
-  maxHeight: "70vh",
+    borderRadius: "18px",
+    overflow: "auto",
+    border: "1px solid #334155",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+    marginTop: "18px",
+    maxHeight: "70vh",
   },
 
   // TABLE HEADER
   th: {
     background: "#1e293b",
-  color: "#f8fafc",
-  padding: "16px 14px",
-  fontSize: "13px",
-  fontWeight: "700",
-  textAlign: "left",
-  position: "sticky",
-  top: 0,
-  whiteSpace: "nowrap",
-  borderBottom: "1px solid #475569",
-  zIndex: 2,
+    color: "#f8fafc",
+    padding: "16px 14px",
+    fontSize: "13px",
+    fontWeight: "700",
+    textAlign: "left",
+    position: "sticky",
+    top: 0,
+    whiteSpace: "nowrap",
+    borderBottom: "1px solid #475569",
+    zIndex: 2,
   },
 
   thS: {
-     background: "#1e293b",
-  color: "#fff",
-  padding: "16px 12px",
-  fontSize: "13px",
-  width: "60px",
-  position: "sticky",
-  top: 0,
-  zIndex: 2,
-  borderBottom: "1px solid #475569",
+    background: "#1e293b",
+    color: "#fff",
+    padding: "16px 12px",
+    fontSize: "13px",
+    width: "60px",
+    position: "sticky",
+    top: 0,
+    zIndex: 2,
+    borderBottom: "1px solid #475569",
   },
 
   // TABLE DATA
   td: {
     padding: "14px",
-  borderBottom: "1px solid #1e293b",
-  color: "#e2e8f0",
-  fontSize: "13px",
-  whiteSpace: "nowrap",
-  transition: "0.2s",
+    borderBottom: "1px solid #1e293b",
+    color: "#e2e8f0",
+    fontSize: "13px",
+    whiteSpace: "nowrap",
+    transition: "0.2s",
   },
 
   tdS: {
-   padding: "14px",
-  color: "#94a3b8",
-  fontSize: "13px",
-  textAlign: "center",
-  borderBottom: "1px solid #1e293b",
+    padding: "14px",
+    color: "#94a3b8",
+    fontSize: "13px",
+    textAlign: "center",
+    borderBottom: "1px solid #1e293b",
   },
 
   inp: {
-     width: "100%",
-  background: "transparent",
-  border: "1px solid transparent",
-  color: "#fff",
-  outline: "none",
-  fontSize: "13px",
-  padding: "8px 10px",
-  borderRadius: "8px",
-  transition: "0.2s",
+    width: "100%",
+    background: "transparent",
+    border: "1px solid transparent",
+    color: "#fff",
+    outline: "none",
+    fontSize: "13px",
+    padding: "8px 10px",
+    borderRadius: "8px",
+    transition: "0.2s",
   },
 
   // EMPTY
@@ -503,22 +503,22 @@ const s = {
 };
 // ─── Component ─────────────────────────────────────────────────────────────────
 export default function GSTR1Report() {
-  const [activeTab,   setActiveTab]   = useState(0);
+  const [activeTab, setActiveTab] = useState(0);
   // const [tabData,     setTabData]     = useState(JSON.parse(JSON.stringify(SEED_DATA)));
   const [tabData, setTabData] = useState(DEFAULT_DATA);
- const [fromDate, setFromDate] = useState("yyyy-mm-dd");
-const [toDate, setToDate] = useState("yyyy-mm-dd");
-  const [hsnDetail,   setHsnDetail]   = useState("Master");
+  const [fromDate, setFromDate] = useState("yyyy-mm-dd");
+  const [toDate, setToDate] = useState("yyyy-mm-dd");
+  const [hsnDetail, setHsnDetail] = useState("Master");
   const [toverFormat, setToverFormat] = useState("New Format");
-  const [annualTO,    setAnnualTO]    = useState("More Than 5 Crore");
-  const [mode,        setMode]        = useState("Export");
-  const [eInvoice,    setEInvoice]    = useState("All");
-  const [toast,       setToast]       = useState("");
-  const [loading,     setLoading]     = useState(false);
+  const [annualTO, setAnnualTO] = useState("More Than 5 Crore");
+  const [mode, setMode] = useState("Export");
+  const [eInvoice, setEInvoice] = useState("All");
+  const [toast, setToast] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const tabKey = TABS[activeTab];
-  const cols   = TAB_COLUMNS[tabKey] || [];
-  const rows   = tabData[tabKey] || [];
+  const cols = TAB_COLUMNS[tabKey] || [];
+  const rows = tabData[tabKey] || [];
 
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -536,8 +536,8 @@ const [toDate, setToDate] = useState("yyyy-mm-dd");
   // ── Cell edit ────────────────────────────────────────────────────────────────
   const onCell = useCallback((ri, col, val) => {
     setTabData(prev => {
-      const copy = prev[tabKey].map((r,i) => i===ri ? {...r,[col]:val} : r);
-      return {...prev, [tabKey]: copy};
+      const copy = prev[tabKey].map((r, i) => i === ri ? { ...r, [col]: val } : r);
+      return { ...prev, [tabKey]: copy };
     });
   }, [tabKey]);
 
@@ -545,12 +545,12 @@ const [toDate, setToDate] = useState("yyyy-mm-dd");
   const addRow = useCallback(() => {
     const blank = {};
     cols.forEach(c => { blank[c] = ""; });
-    setTabData(prev => ({...prev, [tabKey]: [...(prev[tabKey]||[]), blank]}));
+    setTabData(prev => ({ ...prev, [tabKey]: [...(prev[tabKey] || []), blank] }));
   }, [tabKey, cols]);
 
   // ── Delete row ───────────────────────────────────────────────────────────────
   const delRow = useCallback((ri) => {
-    setTabData(prev => ({...prev, [tabKey]: prev[tabKey].filter((_,i)=>i!==ri)}));
+    setTabData(prev => ({ ...prev, [tabKey]: prev[tabKey].filter((_, i) => i !== ri) }));
   }, [tabKey]);
 
   // ── Download ─────────────────────────────────────────────────────────────────
@@ -558,395 +558,395 @@ const [toDate, setToDate] = useState("yyyy-mm-dd");
     try {
       downloadZip(fmt, tabData);
       showToast(`Downloading GSTR1_${fmt.toUpperCase()}.zip…`);
-    } catch(e) {
+    } catch (e) {
       showToast("Download failed: " + e.message);
     }
   };
 
-  const loadReportData = async  () => {
-   try {
-    setLoading(true);
-  const [
-   b2bRes,
-  b2clRes,
-  b2csRes,
-  cdnrRes,
-  cdnurRes,
-  expRes,
-  atRes,
-  atadjRes,
-  exempRes,
-  hsnRes,
-  hsnb2b,
-  hsnb2c,
-  docsRes
-    ] = await Promise.all([
-       axios.get(`${API_BASE_URL}/gstr1/b2b`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/b2c1`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/b2cs`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/cdnr`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/cdnur`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/exp`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/at`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/at`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/exemp`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/hsn`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/hsn`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/hsn`, { params: { from_date: fromDate, to_date: toDate } }),
-       axios.get(`${API_BASE_URL}/gstr1/docs`, { params: { from_date: fromDate, to_date: toDate } })
-    ]);
+  const loadReportData = async () => {
+    try {
+      setLoading(true);
+      const [
+        b2bRes,
+        b2clRes,
+        b2csRes,
+        cdnrRes,
+        cdnurRes,
+        expRes,
+        atRes,
+        atadjRes,
+        exempRes,
+        hsnRes,
+        hsnb2b,
+        hsnb2c,
+        docsRes
+      ] = await Promise.all([
+        axios.get(`${API_BASE_URL}/gstr1/b2b`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/b2c1`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/b2cs`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/cdnr`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/cdnur`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/exp`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/at`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/at`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/exemp`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/hsn`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/hsn`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/hsn`, { params: { from_date: fromDate, to_date: toDate } }),
+        axios.get(`${API_BASE_URL}/gstr1/docs`, { params: { from_date: fromDate, to_date: toDate } })
+      ]);
 
-    
 
-    setTabData({
-       ...DEFAULT_DATA,
 
-      "b2b,sez,de": b2bRes.data.map((item) => ({
-        "GSTIN/UIN of Recipient": item.gstin || "",
-        "Receiver Name": item.receiver_name || "",
-        "Invoice Number": item.invoice_no || "",
-        "Invoice Date": item.invoice_date || "",
-        "Invoice Value": item.invoice_value || "",
-        "Place Of Supply": item.place_supply || "",
-        "Reverse Charge": item.reverse_charge || "",
-        "Applicable % of Tax Rate": item.applicable_tax || "",
-        "Invoice Type": item.invoice_type || "",
-        "E-Commerce GSTIN": item.ecommerce_gstin || "",
-        "Rate": item.rate || "",
-        "Taxable Value": item.taxable_value || "",
-        "Cess Amount": item.cess_amount || "",
-      })),
+      setTabData({
+        ...DEFAULT_DATA,
 
-      "b2cl": b2clRes.data.map((item) => ({
-        "Invoice Number": item.invoice_no || "",
-        "Invoice Date": item.invoice_date || "",
-        "Invoice Value": item.invoice_value || "",
-        "Place Of Supply": item.place_supply || "",
-        "Rate": item.rate || "",
-        "Applicable % of Tax Rate": item.applicable_tax || "",
-        "Taxable Value": item.taxable_value || "",
-        "Cess Amount": item.cess_amount || "",
-        "E-Commerce GSTIN": item.ecommerce_gstin || "",
-        "Sale from Bonded WH": item.sale_from_bonded_wh || "",
-      })),
+        "b2b,sez,de": b2bRes.data.map((item) => ({
+          "GSTIN/UIN of Recipient": item.gstin || "",
+          "Receiver Name": item.receiver_name || "",
+          "Invoice Number": item.invoice_no || "",
+          "Invoice Date": item.invoice_date || "",
+          "Invoice Value": item.invoice_value || "",
+          "Place Of Supply": item.place_supply || "",
+          "Reverse Charge": item.reverse_charge || "",
+          "Applicable % of Tax Rate": item.applicable_tax || "",
+          "Invoice Type": item.invoice_type || "",
+          "E-Commerce GSTIN": item.ecommerce_gstin || "",
+          "Rate": item.rate || "",
+          "Taxable Value": item.taxable_value || "",
+          "Cess Amount": item.cess_amount || "",
+        })),
 
-      "b2cs": b2csRes.data.map((item) => ({
-        "Type": item.type || "",
-        "Place Of Supply": item.place_supply || "",
-        "Rate": item.rate || "",
-        "Applicable % of Tax Rate": item.applicable_tax || "",
-        "Taxable Value": item.taxable_value || "",
-        "Cess Amount": item.cess_amount || "",
-        "E-Commerce GSTIN": item.ecommerce_gstin || "",
-      })),
+        "b2cl": b2clRes.data.map((item) => ({
+          "Invoice Number": item.invoice_no || "",
+          "Invoice Date": item.invoice_date || "",
+          "Invoice Value": item.invoice_value || "",
+          "Place Of Supply": item.place_supply || "",
+          "Rate": item.rate || "",
+          "Applicable % of Tax Rate": item.applicable_tax || "",
+          "Taxable Value": item.taxable_value || "",
+          "Cess Amount": item.cess_amount || "",
+          "E-Commerce GSTIN": item.ecommerce_gstin || "",
+          "Sale from Bonded WH": item.sale_from_bonded_wh || "",
+        })),
 
-      "cdnr": cdnrRes.data.map((item) => ({
-        "GSTIN/UIN of Recipient": item.gstin || "",
-        "Receiver Name": item.receiver_name || "",
-        "Note Number": item.note_no || "",
-        "Note Date": item.note_date || "",
-        "Note Type": item.note_type || "",
-        "Place Of Supply": item.place_supply || "",
-        "Reverse Charge": item.reverse_charge || "",
-        "Note Supply Type": item.note_supply_type || "",
-        "Note Value": item.note_value || "",
-        "Applicable % of Tax Rate": item.applicable_tax || "",
-        "Rate":item.rate || "",
-        "Taxable Value":item.taxable_value || "",
-        "Cess Amount":item.cess_amount || "",
-      })),
+        "b2cs": b2csRes.data.map((item) => ({
+          "Type": item.type || "",
+          "Place Of Supply": item.place_supply || "",
+          "Rate": item.rate || "",
+          "Applicable % of Tax Rate": item.applicable_tax || "",
+          "Taxable Value": item.taxable_value || "",
+          "Cess Amount": item.cess_amount || "",
+          "E-Commerce GSTIN": item.ecommerce_gstin || "",
+        })),
 
- 
-      "cdnur": cdnurRes.data.map((item) => ({
-        "UR Type": item.ur_type || "",
-        "Note Number": item.note_no || "",
-        "Note Date": item.note_date || "",
-        "Note Type": item.note_type || "",
-        "Place Of Supply": item.place_supply || "",
-        "Note Value": item.note_value || "",
-        "Applicable % of Tax Rate": item.applicable_tax || "",
-        "Rate":item.rate || "",
-        "Taxable Value":item.taxable_value || "",
-        "Cess Amount":item.cess_amount || "",
-      })),
+        "cdnr": cdnrRes.data.map((item) => ({
+          "GSTIN/UIN of Recipient": item.gstin || "",
+          "Receiver Name": item.receiver_name || "",
+          "Note Number": item.note_no || "",
+          "Note Date": item.note_date || "",
+          "Note Type": item.note_type || "",
+          "Place Of Supply": item.place_supply || "",
+          "Reverse Charge": item.reverse_charge || "",
+          "Note Supply Type": item.note_supply_type || "",
+          "Note Value": item.note_value || "",
+          "Applicable % of Tax Rate": item.applicable_tax || "",
+          "Rate": item.rate || "",
+          "Taxable Value": item.taxable_value || "",
+          "Cess Amount": item.cess_amount || "",
+        })),
 
-  
-      "exp": expRes.data.map((item) => ({
-        "Export Type": item.exp_type || "",
-        "Invoice Number": item.invoice_no || "",
-        "Invoice Date": item.invoice_date || "",
-        "Invoice Value": item.invoice_value || "",
-        "Port Code": item.po_code || "",
-        "Shipping Bill Number": item.shipping_bill_no || "",
-        "Shipping Bill Date": item.shipping_bill_date || "",
-        "Rate":item.rate || "",
-        "Applicable % of Tax Rate": item.applicable_tax || "",
-        "Taxable Value":item.taxable_value || "",
-        "Cess Amount":item.cess_amount || "",
-      })),
 
-      "at": atRes.data.map((item) => ({
-        "Place Of Supply": item.place_supply || "",
-        "Rate":item.rate || "",
-        "Applicable % of Tax Rate": item.applicable_tax || "",
-        "Gross Advance Received":item.gross_adv_recive || "",
-        "Cess Amount":item.cess_amount || "",
-      })),
+        "cdnur": cdnurRes.data.map((item) => ({
+          "UR Type": item.ur_type || "",
+          "Note Number": item.note_no || "",
+          "Note Date": item.note_date || "",
+          "Note Type": item.note_type || "",
+          "Place Of Supply": item.place_supply || "",
+          "Note Value": item.note_value || "",
+          "Applicable % of Tax Rate": item.applicable_tax || "",
+          "Rate": item.rate || "",
+          "Taxable Value": item.taxable_value || "",
+          "Cess Amount": item.cess_amount || "",
+        })),
 
-       "atadj": atadjRes.data.map((item) => ({
-        "Place Of Supply": item.place_supply || "",
-        "Rate":item.rate || "",
-        "Applicable % of Tax Rate": item.applicable_tax || "",
-        "Gross Advance Received":item.gross_adv_recive || "",
-        "Cess Amount":item.cess_amount || "",
-      })),
 
-      "exemp": exempRes.data.map((item) => ({
-        "Description": item.description || "",
-        "Nil Rated Supplies":item.nill_rate_supplies || "",
-        "Exempted (other than Nil Rated / Non-GST Supply)": item.excempted || "",
-        "Non-GST Supplies":item.non_gst_supplies || "",
-      })),
+        "exp": expRes.data.map((item) => ({
+          "Export Type": item.exp_type || "",
+          "Invoice Number": item.invoice_no || "",
+          "Invoice Date": item.invoice_date || "",
+          "Invoice Value": item.invoice_value || "",
+          "Port Code": item.po_code || "",
+          "Shipping Bill Number": item.shipping_bill_no || "",
+          "Shipping Bill Date": item.shipping_bill_date || "",
+          "Rate": item.rate || "",
+          "Applicable % of Tax Rate": item.applicable_tax || "",
+          "Taxable Value": item.taxable_value || "",
+          "Cess Amount": item.cess_amount || "",
+        })),
 
-      "hsn": hsnRes.data.map((item) => ({
-        "HSN": item.hsn || "",
-        "Description": item.description || "",
-        "UQC": item.uqc || "",
-        "Total Quantity": item.total_quantity || "",
-        "Total Value": item.total_value || "",
-        "Taxable Value": item.taxable_value || "",
-        "Integrated Tax Amount": item.integ_tax_amount || "",
-        "Central Tax Amount":item.central_tax_amount || "",
-        "State/UT Tax Amount": item.state_tax_amount || "",
-        "Rate":item.rate || "",
-        "Cess Amount":item.cess_amount || "",
-      })),
+        "at": atRes.data.map((item) => ({
+          "Place Of Supply": item.place_supply || "",
+          "Rate": item.rate || "",
+          "Applicable % of Tax Rate": item.applicable_tax || "",
+          "Gross Advance Received": item.gross_adv_recive || "",
+          "Cess Amount": item.cess_amount || "",
+        })),
 
-       "hsn(b2b)": hsnb2b.data.map((item) => ({
-        "HSN": item.hsn || "",
-        "Description": item.description || "",
-        "UQC": item.uqc || "",
-        "Total Quantity": item.total_quantity || "",
-        "Total Value": item.total_value || "",
-        "Taxable Value": item.taxable_value || "",
-        "Integrated Tax Amount": item.integ_tax_amount || "",
-        "Central Tax Amount":item.central_tax_amount || "",
-        "State/UT Tax Amount": item.state_tax_amount || "",
-        "Rate":item.rate || "",
-        "Cess Amount":item.cess_amount || "",
-      })),
+        "atadj": atadjRes.data.map((item) => ({
+          "Place Of Supply": item.place_supply || "",
+          "Rate": item.rate || "",
+          "Applicable % of Tax Rate": item.applicable_tax || "",
+          "Gross Advance Received": item.gross_adv_recive || "",
+          "Cess Amount": item.cess_amount || "",
+        })),
 
-       "hsn(b2c)": hsnb2c.data.map((item) => ({
-        "HSN": item.hsn || "",
-        "Description": item.description || "",
-        "UQC": item.uqc || "",
-        "Total Quantity": item.total_quantity || "",
-        "Total Value": item.total_value || "",
-        "Taxable Value": item.taxable_value || "",
-        "Integrated Tax Amount": item.integ_tax_amount || "",
-        "Central Tax Amount":item.central_tax_amount || "",
-        "State/UT Tax Amount": item.state_tax_amount || "",
-        "Rate":item.rate || "",
-        "Cess Amount":item.cess_amount || "",
-      })),
+        "exemp": exempRes.data.map((item) => ({
+          "Description": item.description || "",
+          "Nil Rated Supplies": item.nill_rate_supplies || "",
+          "Exempted (other than Nil Rated / Non-GST Supply)": item.excempted || "",
+          "Non-GST Supplies": item.non_gst_supplies || "",
+        })),
 
-      "docs": docsRes.data.map((item) => ({
-        "Nature of Document": item.nature_of_doc || "",
-        "Sr. No. From": item.sr_no_from || "",
-        "Sr. No. To": item.sr_no_to || "",
-        "Total Number": item.total_number || "",
-        "Cancelled": item.cancelled || "",
-      })),
-    
-       });
+        "hsn": hsnRes.data.map((item) => ({
+          "HSN": item.hsn || "",
+          "Description": item.description || "",
+          "UQC": item.uqc || "",
+          "Total Quantity": item.total_quantity || "",
+          "Total Value": item.total_value || "",
+          "Taxable Value": item.taxable_value || "",
+          "Integrated Tax Amount": item.integ_tax_amount || "",
+          "Central Tax Amount": item.central_tax_amount || "",
+          "State/UT Tax Amount": item.state_tax_amount || "",
+          "Rate": item.rate || "",
+          "Cess Amount": item.cess_amount || "",
+        })),
 
-    showToast("Report loaded successfully!");
-  } catch (error) {
-    console.error("API Error:", error);
-    showToast("Failed to load report");
-  } finally {
-    setLoading(false);
-  }
-};
+        "hsn(b2b)": hsnb2b.data.map((item) => ({
+          "HSN": item.hsn || "",
+          "Description": item.description || "",
+          "UQC": item.uqc || "",
+          "Total Quantity": item.total_quantity || "",
+          "Total Value": item.total_value || "",
+          "Taxable Value": item.taxable_value || "",
+          "Integrated Tax Amount": item.integ_tax_amount || "",
+          "Central Tax Amount": item.central_tax_amount || "",
+          "State/UT Tax Amount": item.state_tax_amount || "",
+          "Rate": item.rate || "",
+          "Cess Amount": item.cess_amount || "",
+        })),
 
-useEffect(() => {
-  loadReportData();
-}, []);
+        "hsn(b2c)": hsnb2c.data.map((item) => ({
+          "HSN": item.hsn || "",
+          "Description": item.description || "",
+          "UQC": item.uqc || "",
+          "Total Quantity": item.total_quantity || "",
+          "Total Value": item.total_value || "",
+          "Taxable Value": item.taxable_value || "",
+          "Integrated Tax Amount": item.integ_tax_amount || "",
+          "Central Tax Amount": item.central_tax_amount || "",
+          "State/UT Tax Amount": item.state_tax_amount || "",
+          "Rate": item.rate || "",
+          "Cess Amount": item.cess_amount || "",
+        })),
+
+        "docs": docsRes.data.map((item) => ({
+          "Nature of Document": item.nature_of_doc || "",
+          "Sr. No. From": item.sr_no_from || "",
+          "Sr. No. To": item.sr_no_to || "",
+          "Total Number": item.total_number || "",
+          "Cancelled": item.cancelled || "",
+        })),
+
+      });
+
+      showToast("Report loaded successfully!");
+    } catch (error) {
+      console.error("API Error:", error);
+      showToast("Failed to load report");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadReportData();
+  }, []);
 
 
   return (
-     <>
-    <style>
-      {`
+    <>
+      <style>
+        {`
       input[type="date"]::-webkit-calendar-picker-indicator {
         filter: invert(1);
         cursor: pointer;
       }
       `}
-    </style>
-    <div style={s.app}>
-    <div style={{ maxWidth: "1500px", margin: "0 auto" }}></div>
-      {/* Title Bar */}
-      <div style={s.titleBar}>
-        <div style={s.titleLabel}>GSTR1 Report</div>
-        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4}}>
-          <span style={{fontSize:11}}>Default</span>
-          <select style={{fontSize:11,height:20,border:"1px inset #999"}}><option>Default</option></select>
-        </div>
-      </div>
-
-      {/* Parameters */}
-      <div style={s.params}>
-        {/* Left column */}
-        <div>
-          {[["Enter From Date", fromDate, setFromDate],["Enter To Date", toDate, setToDate]].map(([lbl,val,set])=>(
-            <div key={lbl} style={s.paramRow}>
-              <div style={s.paramLabel}>{lbl}</div>
-              <div style={s.paramVal}><input  type="date" value={val} onChange={e => set(e.target.value)} style={s.pInp}/></div>
-            </div>
-          ))}
-          <div style={s.paramRow}>
-            <div style={s.paramLabel}>HSN/GST detail</div>
-            <div style={s.paramVal}>
-              <select value={hsnDetail} onChange={e=>setHsnDetail(e.target.value)} style={s.pSel}>
-                <option value="Master">Master</option>
-                <option value="Transaction">Transaction</option>
-              </select>
-            </div>
-          </div>
-          <div style={s.paramRow}>
-            <div style={s.paramLabel}>Annual TurnOver Format</div>
-            <div style={s.paramVal}>
-              <select value={toverFormat} onChange={e=>setToverFormat(e.target.value)} style={s.pSel}>
-                <option>New Format</option>
-                <option>Old Format</option>
-              </select>
-            </div>
+      </style>
+      <div style={s.app}>
+        <div style={{ maxWidth: "1500px", margin: "0 auto" }}></div>
+        {/* Title Bar */}
+        <div style={s.titleBar}>
+          <div style={s.titleLabel}>GSTR1 Report</div>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ fontSize: 11 }}>Default</span>
+            <select style={{ fontSize: 11, height: 20, border: "1px inset #999" }}><option>Default</option></select>
           </div>
         </div>
 
-        {/* Right column */}
-        <div>
-          <div style={s.paramRow}>
-            <div style={{...s.paramLabel,minWidth:190}}>Annual TurnOver(HSN Summary)</div>
-            <div style={{...s.paramVal,minWidth:150}}>
-              <select value={annualTO} onChange={e=>setAnnualTO(e.target.value)} style={s.pSel}>
-                <option value="Upto 5 Crore">Upto 5 Crore</option>
-                <option value="More Than 5 Crore">More Than 5 Crore</option>
-              </select>
+        {/* Parameters */}
+        <div style={s.params}>
+          {/* Left column */}
+          <div>
+            {[["Enter From Date", fromDate, setFromDate], ["Enter To Date", toDate, setToDate]].map(([lbl, val, set]) => (
+              <div key={lbl} style={s.paramRow}>
+                <div style={s.paramLabel}>{lbl}</div>
+                <div style={s.paramVal}><input type="date" value={val} onChange={e => set(e.target.value)} style={s.pInp} /></div>
+              </div>
+            ))}
+            <div style={s.paramRow}>
+              <div style={s.paramLabel}>HSN/GST detail</div>
+              <div style={s.paramVal}>
+                <select value={hsnDetail} onChange={e => setHsnDetail(e.target.value)} style={s.pSel}>
+                  <option value="Master">Master</option>
+                  <option value="Transaction">Transaction</option>
+                </select>
+              </div>
+            </div>
+            <div style={s.paramRow}>
+              <div style={s.paramLabel}>Annual TurnOver Format</div>
+              <div style={s.paramVal}>
+                <select value={toverFormat} onChange={e => setToverFormat(e.target.value)} style={s.pSel}>
+                  <option>New Format</option>
+                  <option>Old Format</option>
+                </select>
+              </div>
             </div>
           </div>
-          <div style={s.paramRow}>
-            <div style={{...s.paramLabel,minWidth:190}}>Mode</div>
-            <div style={{...s.paramVal,minWidth:150}}>
-              <select value={mode} onChange={e=>setMode(e.target.value)} style={s.pSel}>
-                <option value="Export">Export</option>
-                <option value="View">View</option>
-              </select>
+
+          {/* Right column */}
+          <div>
+            <div style={s.paramRow}>
+              <div style={{ ...s.paramLabel, minWidth: 190 }}>Annual TurnOver(HSN Summary)</div>
+              <div style={{ ...s.paramVal, minWidth: 150 }}>
+                <select value={annualTO} onChange={e => setAnnualTO(e.target.value)} style={s.pSel}>
+                  <option value="Upto 5 Crore">Upto 5 Crore</option>
+                  <option value="More Than 5 Crore">More Than 5 Crore</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div style={s.paramRow}>
-            <div style={{...s.paramLabel,minWidth:190}}>e-Invoice status</div>
-            <div style={{...s.paramVal,minWidth:150}}>
-              <select value={eInvoice} onChange={e=>setEInvoice(e.target.value)} style={s.pSel}>
-                <option value="All">All</option>
-                <option value="Pending">Pending</option>
-                <option value="Uploaded">Uploaded</option>
-              </select>
+            <div style={s.paramRow}>
+              <div style={{ ...s.paramLabel, minWidth: 190 }}>Mode</div>
+              <div style={{ ...s.paramVal, minWidth: 150 }}>
+                <select value={mode} onChange={e => setMode(e.target.value)} style={s.pSel}>
+                  <option value="Export">Export</option>
+                  <option value="View">View</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",marginTop:6}}>
-            <button style={s.loadBtn} onClick={handleLoadReport} disabled={loading}>
-              {loading ? "Loading…" : "Load Report"}
-            </button>
-            <button style={s.expBtn} onClick={()=>handleDownload("json")}>JSON</button>
-            <button style={s.expBtn} onClick={()=>handleDownload("csv")}>CSV</button>
-            <button style={s.expBtn} onClick={()=>handleDownload("excel")}>Excel</button>
+            <div style={s.paramRow}>
+              <div style={{ ...s.paramLabel, minWidth: 190 }}>e-Invoice status</div>
+              <div style={{ ...s.paramVal, minWidth: 150 }}>
+                <select value={eInvoice} onChange={e => setEInvoice(e.target.value)} style={s.pSel}>
+                  <option value="All">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Uploaded">Uploaded</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginTop: 6 }}>
+              <button style={s.loadBtn} onClick={handleLoadReport} disabled={loading}>
+                {loading ? "Loading…" : "Load Report"}
+              </button>
+              <button style={s.expBtn} onClick={() => handleDownload("json")}>JSON</button>
+              <button style={s.expBtn} onClick={() => handleDownload("csv")}>CSV</button>
+              <button style={s.expBtn} onClick={() => handleDownload("excel")}>Excel</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* F10 bar */}
-      <div style={s.f10bar}>
-        <span style={{color:"#0000cc",cursor:"pointer"}}>F10 - View Options</span>
-        &nbsp; Annual TurnOver Format &nbsp; {toverFormat}
-      </div>
+        {/* F10 bar */}
+        <div style={s.f10bar}>
+          <span style={{ color: "#0000cc", cursor: "pointer" }}>F10 - View Options</span>
+          &nbsp; Annual TurnOver Format &nbsp; {toverFormat}
+        </div>
 
-      {/* Dynamic Data Grid */}
-      <div style={s.gridWrap}>
-        {loading ? (
-          <div style={{...s.emptyCell, padding:"40px 0"}}>⏳ Reloading report data…</div>
-        ) : (
-          <table style={{width:"100%",borderCollapse:"collapse",borderSpacing: 0,minWidth: "1400px",}}>
-            <thead>
-              <tr>
-                <th style={s.thS}>#</th>
-                {cols.map((c,i)=><th key={i} style={s.th}>{c}</th>)}
-                {/* {cols.length>0 && <th style={s.thAct}>Action</th>} */}
-              </tr>
-            </thead>
-            <tbody>
-              {cols.length===0 ? (
-                <tr><td colSpan={2} style={s.emptyCell}>Select a tab to view columns</td></tr>
-              ) : rows.length===0 ? (
-                <tr><td colSpan={cols.length+2} style={s.emptyCell}>No data — click "+ Add Row" to begin</td></tr>
-              ) : rows.map((row,ri)=>(
-                <tr  key={ri}
-  style={{
-    background: ri % 2 === 0 ? "#172033" : "#0f172a",
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.background = "#263449";
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.background =
-      ri % 2 === 0 ? "#172033" : "#0f172a";
-  }}>
-                  <td style={s.tdS}>{ri+1}</td>
-                  {cols.map((col,ci)=>(
-                    <td key={ci} style={s.td}>
-                      <input
-                        value={row[col]??""}
-                        onChange={e=>onCell(ri,col,e.target.value)}
-                        style={s.inp}
-                      />
-                    </td>
-                  ))}
-                  {/* <td style={{...s.td,textAlign:"center",width:48}}>
+        {/* Dynamic Data Grid */}
+        <div style={s.gridWrap}>
+          {loading ? (
+            <div style={{ ...s.emptyCell, padding: "40px 0" }}>⏳ Reloading report data…</div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", borderSpacing: 0, minWidth: "1400px", }}>
+              <thead>
+                <tr>
+                  <th style={s.thS}>#</th>
+                  {cols.map((c, i) => <th key={i} style={s.th}>{c}</th>)}
+                  {/* {cols.length>0 && <th style={s.thAct}>Action</th>} */}
+                </tr>
+              </thead>
+              <tbody>
+                {cols.length === 0 ? (
+                  <tr><td colSpan={2} style={s.emptyCell}>Select a tab to view columns</td></tr>
+                ) : rows.length === 0 ? (
+                  <tr><td colSpan={cols.length + 2} style={s.emptyCell}>No data — click "+ Add Row" to begin</td></tr>
+                ) : rows.map((row, ri) => (
+                  <tr key={ri}
+                    style={{
+                      background: ri % 2 === 0 ? "#172033" : "#0f172a",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#263449";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background =
+                        ri % 2 === 0 ? "#172033" : "#0f172a";
+                    }}>
+                    <td style={s.tdS}>{ri + 1}</td>
+                    {cols.map((col, ci) => (
+                      <td key={ci} style={s.td}>
+                        <input
+                          value={row[col] ?? ""}
+                          onChange={e => onCell(ri, col, e.target.value)}
+                          style={s.inp}
+                        />
+                      </td>
+                    ))}
+                    {/* <td style={{...s.td,textAlign:"center",width:48}}>
                     <button style={s.delBtn} onClick={()=>delRow(ri)}>✕</button>
                   </td> */}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
-      {/* Add Row bar */}
-      {/* {cols.length>0 && !loading && (
+        {/* Add Row bar */}
+        {/* {cols.length>0 && !loading && (
         <div style={{background:"#e8dfc0",borderTop:"1px solid #ccc",padding:"3px 0"}}>
           <button style={s.addBtn} onClick={addRow}>+ Add Row</button>
           <span style={{fontSize:10,color:"#555"}}>{rows.length} record{rows.length!==1?"s":""} in <strong>{tabKey}</strong></span>
         </div>
       )} */}
 
-      {/* Bottom Tabs */}
-      <div style={s.tabsBar}>
-        {/* <span style={{fontSize:11,marginRight:4,color:"#000"}}>|◄ ◄ ► ►|</span> */}
-        {TABS.map((tab,i)=>(
-          <button key={i} style={activeTab===i?s.tabAct:s.tab} onClick={()=>setActiveTab(i)}>{tab}</button>
-        ))}
-      </div>
+        {/* Bottom Tabs */}
+        <div style={s.tabsBar}>
+          {/* <span style={{fontSize:11,marginRight:4,color:"#000"}}>|◄ ◄ ► ►|</span> */}
+          {TABS.map((tab, i) => (
+            <button key={i} style={activeTab === i ? s.tabAct : s.tab} onClick={() => setActiveTab(i)}>{tab}</button>
+          ))}
+        </div>
 
-      {/* Status Bar */}
-      {/* <div style={s.statusBar}>
+        {/* Status Bar */}
+        {/* <div style={s.statusBar}>
         Esc - Exit, F2 - Current Month, More Help Press Alt+F1 and View
       </div> */}
 
-      {/* Toast */}
-      {toast && <div style={s.toast}>{toast}</div>}
+        {/* Toast */}
+        {toast && <div style={s.toast}>{toast}</div>}
 
-    </div>
+      </div>
     </>
   );
 }

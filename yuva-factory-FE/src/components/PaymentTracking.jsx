@@ -8,7 +8,7 @@ const PaymentTracking = () => {
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
   const [showDetailsPopup, setShowDetailsPopup] = useState(false);
-  
+
   // Payment form state
   const [paymentForm, setPaymentForm] = useState({
     amount: '',
@@ -16,16 +16,16 @@ const PaymentTracking = () => {
     reference_number: '',
     notes: ''
   });
-  
+
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  
-  const BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000") + \'';
+
+  const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   // Check authentication
   useEffect(() => {
@@ -39,7 +39,7 @@ const PaymentTracking = () => {
         mode: 'cors'
       });
       const data = await response.json();
-      
+
       if (data.authenticated) {
         fetchSuppliers();
       } else {
@@ -61,7 +61,7 @@ const PaymentTracking = () => {
           'Content-Type': 'application/json',
         }
       });
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           window.location.href = '/login';
@@ -69,7 +69,7 @@ const PaymentTracking = () => {
         }
         throw new Error('Failed to fetch suppliers');
       }
-      
+
       const data = await response.json();
       if (data.success) {
         // Calculate payment info for each supplier
@@ -81,15 +81,15 @@ const PaymentTracking = () => {
                 mode: 'cors'
               });
               const paymentData = await paymentResponse.json();
-              
+
               // Use persistent total from supplier (doesn't reset when items are deleted)
               const totalPurchase = supplier.total_purchase_amount ||
                 supplier.items.reduce((sum, item) =>
                   sum + ((item.quantity || 0) * (item.buy_price || 0)), 0);
-              const totalPaid = paymentData.success ? 
+              const totalPaid = paymentData.success ?
                 paymentData.payments.reduce((sum, p) => sum + p.amount, 0) : 0;
               const remainingBalance = totalPurchase - totalPaid;
-              
+
               return {
                 ...supplier,
                 payments: paymentData.success ? paymentData.payments : [],
@@ -111,7 +111,7 @@ const PaymentTracking = () => {
             }
           })
         );
-        
+
         setSuppliers(suppliersWithPayments);
       }
     } catch (err) {
@@ -138,7 +138,7 @@ const PaymentTracking = () => {
       alert('Please enter an amount');
       return;
     }
-    
+
     try {
       setLoading(true);
       const response = await fetch(`${BASE_URL}/api/suppliers/${selectedSupplier.id}/payments`, {
@@ -155,12 +155,12 @@ const PaymentTracking = () => {
           notes: paymentForm.notes || null
         })
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to record payment');
       }
-      
+
       const data = await response.json();
       if (data.success) {
         await fetchSuppliers();
@@ -192,12 +192,12 @@ const PaymentTracking = () => {
           credentials: 'include',
           mode: 'cors'
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to delete payment');
         }
-        
+
         const data = await response.json();
         if (data.success) {
           await fetchSuppliers();
@@ -215,7 +215,7 @@ const PaymentTracking = () => {
   // Filter suppliers
   const getFilteredSuppliers = () => {
     let filtered = suppliers;
-    
+
     if (searchTerm) {
       filtered = filtered.filter(supplier =>
         supplier.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -223,13 +223,13 @@ const PaymentTracking = () => {
         supplier.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(supplier => 
+      filtered = filtered.filter(supplier =>
         supplier.payment_status?.toLowerCase() === statusFilter.toLowerCase()
       );
     }
-    
+
     return filtered;
   };
 
@@ -243,7 +243,7 @@ const PaymentTracking = () => {
 
   // Get status color
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'Paid': return '#10b981';
       case 'Pending': return '#f59e0b';
       case 'Unpaid': return '#ef4444';
@@ -614,19 +614,19 @@ const PaymentTracking = () => {
   // Render payment popup
   const renderPaymentPopup = () => {
     if (!showPaymentPopup || !selectedSupplier) return null;
-    
+
     return (
       <div style={styles.overlay} onClick={() => setShowPaymentPopup(false)}>
         <div style={styles.popup} onClick={(e) => e.stopPropagation()}>
-          <button 
-            style={styles.closeButton} 
+          <button
+            style={styles.closeButton}
             onClick={() => setShowPaymentPopup(false)}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#334155'}
           >
             ✕
           </button>
-          
+
           <div style={styles.popupHeader}>
             <h2 style={styles.popupTitle}>Record Payment</h2>
             <div style={{ color: '#94a3b8', marginTop: '8px' }}>
@@ -636,7 +636,7 @@ const PaymentTracking = () => {
               Remaining Balance: {formatCurrency(selectedSupplier.remaining_balance)}
             </div>
           </div>
-          
+
           <form onSubmit={recordPayment}>
             <div style={styles.formGroup}>
               <label style={styles.label}>Amount *</label>
@@ -653,7 +653,7 @@ const PaymentTracking = () => {
                 disabled={loading}
               />
             </div>
-            
+
             <div style={styles.formGroup}>
               <label style={styles.label}>Payment Method</label>
               <select
@@ -670,7 +670,7 @@ const PaymentTracking = () => {
                 <option value="UPI">UPI</option>
               </select>
             </div>
-            
+
             <div style={styles.formGroup}>
               <label style={styles.label}>Reference Number (Optional)</label>
               <input
@@ -683,7 +683,7 @@ const PaymentTracking = () => {
                 disabled={loading}
               />
             </div>
-            
+
             <div style={styles.formGroup}>
               <label style={styles.label}>Notes (Optional)</label>
               <textarea
@@ -695,19 +695,19 @@ const PaymentTracking = () => {
                 disabled={loading}
               />
             </div>
-            
+
             <div style={styles.buttonGroup}>
-              <button 
-                type="button" 
-                onClick={() => setShowPaymentPopup(false)} 
+              <button
+                type="button"
+                onClick={() => setShowPaymentPopup(false)}
                 style={styles.cancelButton}
                 disabled={loading}
               >
                 Cancel
               </button>
-              <button 
-                type="submit" 
-                style={styles.submitButton} 
+              <button
+                type="submit"
+                style={styles.submitButton}
                 disabled={loading}
               >
                 {loading ? 'Processing...' : 'Record Payment'}
@@ -722,19 +722,19 @@ const PaymentTracking = () => {
   // Render details popup
   const renderDetailsPopup = () => {
     if (!showDetailsPopup || !selectedSupplier) return null;
-    
+
     return (
       <div style={styles.overlay} onClick={() => setShowDetailsPopup(false)}>
-        <div style={{...styles.popup, width: "900px"}} onClick={(e) => e.stopPropagation()}>
-          <button 
-            style={styles.closeButton} 
+        <div style={{ ...styles.popup, width: "900px" }} onClick={(e) => e.stopPropagation()}>
+          <button
+            style={styles.closeButton}
             onClick={() => setShowDetailsPopup(false)}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#334155'}
           >
             ✕
           </button>
-          
+
           <div style={styles.popupHeader}>
             <h2 style={styles.popupTitle}>Supplier Details</h2>
             <div style={{ color: '#fff', fontSize: '18px', marginTop: '10px' }}>
@@ -746,7 +746,7 @@ const PaymentTracking = () => {
               {selectedSupplier.address && `📍 ${selectedSupplier.address}`}
             </div>
           </div>
-          
+
           {/* Payment Summary */}
           <div style={{ marginBottom: "30px" }}>
             <h3 style={{ color: '#fff', marginBottom: "15px", fontSize: "18px" }}>Payment Summary</h3>
@@ -761,13 +761,13 @@ const PaymentTracking = () => {
               </div>
               <div style={styles.summaryItem}>
                 <div style={styles.summaryLabel}>Remaining Balance</div>
-                <div style={{...styles.summaryValue, color: selectedSupplier.remaining_balance > 0 ? '#f59e0b' : '#10b981'}}>
+                <div style={{ ...styles.summaryValue, color: selectedSupplier.remaining_balance > 0 ? '#f59e0b' : '#10b981' }}>
                   {formatCurrency(selectedSupplier.remaining_balance)}
                 </div>
               </div>
             </div>
           </div>
-          
+
           {/* Items List */}
           <div style={{ marginBottom: "30px" }}>
             <h3 style={{ color: '#fff', marginBottom: "15px", fontSize: "18px" }}>Items Purchased</h3>
@@ -813,7 +813,7 @@ const PaymentTracking = () => {
               </table>
             </div>
           </div>
-          
+
           {/* Payment History */}
           <div>
             <h3 style={{ color: '#fff', marginBottom: "15px", fontSize: "18px" }}>Payment History</h3>
@@ -843,7 +843,7 @@ const PaymentTracking = () => {
                         <td style={styles.td}>
                           <button
                             onClick={() => deletePayment(payment.id)}
-                            style={{...styles.button, ...styles.buttonSmall, ...styles.deleteButton}}
+                            style={{ ...styles.button, ...styles.buttonSmall, ...styles.deleteButton }}
                             disabled={loading}
                           >
                             Delete
@@ -862,7 +862,7 @@ const PaymentTracking = () => {
               </table>
             </div>
           </div>
-          
+
           <div style={styles.buttonGroup}>
             <button onClick={() => setShowDetailsPopup(false)} style={styles.submitButton}>
               Close
@@ -889,7 +889,7 @@ const PaymentTracking = () => {
           <p style={styles.subtitle}>Track supplier payments, view balances, and manage payment history</p>
         </div>
       </div>
-      
+
       {/* Summary Cards */}
       <div style={styles.summaryCard}>
         <div style={styles.summaryGrid}>
@@ -903,7 +903,7 @@ const PaymentTracking = () => {
           </div>
           <div style={styles.summaryItem}>
             <div style={styles.summaryLabel}>Total Remaining Balance</div>
-            <div style={{...styles.summaryValue, color: overallRemaining > 0 ? '#f59e0b' : '#10b981'}}>
+            <div style={{ ...styles.summaryValue, color: overallRemaining > 0 ? '#f59e0b' : '#10b981' }}>
               {formatCurrency(overallRemaining)}
             </div>
           </div>
@@ -913,7 +913,7 @@ const PaymentTracking = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Search and Filter */}
       <div style={styles.searchContainer}>
         <input
@@ -940,7 +940,7 @@ const PaymentTracking = () => {
           <option value="unpaid">Unpaid</option>
         </select>
       </div>
-      
+
       {/* Suppliers Table */}
       <div style={styles.tableContainer}>
         <table style={styles.table}>
@@ -992,7 +992,7 @@ const PaymentTracking = () => {
                         setSelectedSupplier(supplier);
                         setShowPaymentPopup(true);
                       }}
-                      style={{...styles.button, ...styles.buttonSmall}}
+                      style={{ ...styles.button, ...styles.buttonSmall }}
                     >
                       Record Payment
                     </button>
@@ -1001,7 +1001,7 @@ const PaymentTracking = () => {
                         setSelectedSupplier(supplier);
                         setShowDetailsPopup(true);
                       }}
-                      style={{...styles.button, ...styles.viewButton, ...styles.buttonSmall}}
+                      style={{ ...styles.button, ...styles.viewButton, ...styles.buttonSmall }}
                     >
                       View Details
                     </button>
@@ -1018,7 +1018,7 @@ const PaymentTracking = () => {
           </tbody>
         </table>
       </div>
-      
+
       {/* Pagination */}
       {totalPages > 1 && (
         <div style={styles.pagination}>
@@ -1032,7 +1032,7 @@ const PaymentTracking = () => {
           >
             ←
           </button>
-          
+
           {[...Array(totalPages)].map((_, index) => {
             const pageNumber = index + 1;
             if (
@@ -1057,7 +1057,7 @@ const PaymentTracking = () => {
             }
             return null;
           })}
-          
+
           <button
             style={{
               ...styles.pageButton,
@@ -1070,14 +1070,14 @@ const PaymentTracking = () => {
           </button>
         </div>
       )}
-      
+
       {/* Results Info */}
       {filteredSuppliers.length > 0 && (
         <div style={styles.resultsInfo}>
           Showing {currentSuppliers.length} of {filteredSuppliers.length} suppliers
         </div>
       )}
-      
+
       {/* Popups */}
       {renderPaymentPopup()}
       {renderDetailsPopup()}
